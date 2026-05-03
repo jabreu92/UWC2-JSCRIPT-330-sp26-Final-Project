@@ -14,10 +14,16 @@ Repository for JS330 Course Final Project
         - c. JetModelSchema: Represents the Private Jet model made by a particular Manufacturer.
         - d. OrderSchema: Represents the Buy order from a customer for a jet purchase.
     - Routes: Below is a Table that structures the routes of the project:
-| Header 1 | Header 2 |
-| -------- | -------- |
-| Row 1, Col 1 | Row 1, Col 2 |
-| Row 2, Col 1 | Row 2, Col 2 |
+    - |  Method  | Endpoint |   | Access   | | Description |
+    - | -------- | -------- |   | -------- | |-------------| 
+    - |   GET    |   /jets  |   | All      | | View Jet Catalog |
+    - |   GET    |   /jets/:id  |  All     | | View Specific Jet |
+    - |   POST   |   /jets  |   | Admin    | | Add new jet to catalog |
+    - |   PUT    |   /jets/:id || Admin    | | Update jet details |
+    - |   GET    |/manufacturer |   | All  | | View all Jet Manufacturers |
+    - |   GET    |/manufacturer |   | All  | | View all Jet Manufacturers |
+    - |   POST   |   /orders   || Regular  | | Purchase a jet |
+    - |   GET    |   /orders   || Mixed    | | Admin sees all, User sees own |
 
 
 - 4. Clear and direct call-outs of how you will meet the various project requirements. 
