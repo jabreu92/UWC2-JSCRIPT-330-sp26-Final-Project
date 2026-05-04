@@ -40,11 +40,14 @@ Repository for JS330 Course Final Project
     - To meet the project requirements we must achieve the following:
     - 1. Routes should be fully testsed with a coverege of 80% or higher. This will be done by writting unit tests for each route defined in the table above and using the JTests framework.
     - 2. We will be performing an End to End test that will be going thru the following business logic of the API:
-    - Here are some of the business logic that we need to test
-        a. Step 1: 
-        b. Step 2:
-        c. Step 3:
-        d. Step 4:
+    - Here are some of the business logic cases to go thru.
+        - a. Signup & Logout of a Customer & Admin.
+        - b. Browse the Jet Catalog & Search for a specific Jet.
+        - c. Get information of the Jet of interest & the manufacturer.
+        - d. Make Purchase Order for the Jet
+        - e. Get the Purchase Order approved by the Admin.
+        - f. See the customer order & Admin to view all the orders
+        - g. Remove the Purchased Jet from the Catalog.
     - 3. Our End to End test must cover the authentication & authorization components of the API.
     - 4. We will be creating a postman collection for the End to End testing and present it to the class.
 - 5. A timeline for what project components you plan to complete, week by week, for the remainder of the class. 
