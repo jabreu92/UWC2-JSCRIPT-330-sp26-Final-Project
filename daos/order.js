@@ -1,4 +1,5 @@
 import Order from '../models/order';
+import Jet from '../models/jet';
 import { findJetById } from './jet';
 // CRUD Operations for Jet
 export const createOneOrder = async (userId, jetId) => {

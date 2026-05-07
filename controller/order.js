@@ -31,7 +31,7 @@ export const approveOrderBySerial = async (req, res) => {
         const approvedOrder = await updateOrderBySerial(serialNumber, 'completed');
 
         if (!approvedOrder) {
-            return res.status(404).json({ message: "No order found with that serial number" });
+            return res.status(404).json({ message: `No order found with that serial number ${serialNumber}` });
         }
 
         res.status(200).json({
