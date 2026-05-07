@@ -1,10 +1,9 @@
-// App Code lives here in the server file 
-const express = require('express');
+import express from 'express';
+import routes from './routes';
 
-const app = express();
+const server = express();
+server.use(express.json());
 
-app.get('/', (req, res) => {
-    res.send('My Web App')
-});
+server.use(routes);
 
-module.exports = app;
+export default server;
