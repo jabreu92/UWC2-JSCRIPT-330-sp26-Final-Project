@@ -10,3 +10,12 @@ export const findByName = async (name) => {
     return null;
   }
 };
+
+export const findById = async (id) => {
+  try {
+    const manufacturer = await Manufacturer.findOne({ _id: id  });
+    return manufacturer;
+  } catch (e) {
+    return null;
+  }
+};
