@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import jets from './jets';
+import jet from './jet';
 
 const router = Router();
 
-router.use('/jets', jets);
+router.use('/jet', jet);
 
 export default router;
