@@ -8,38 +8,31 @@ import { findJetBySku } from './jet.js';
  */
 export const createOneOrder = async (userId, sku) => {
     try {
-        // 1. Find the jet by SKU string
         const jetTemplate = await findJetBySku(sku);
-
-        if (!jetTemplate) {
-            throw new Error(`No jet found with SKU: ${sku}`);
+        if (!jetTemplate || !jetTemplate.isAvailable) {
+            throw new Error("Jet unavailable or not found.");
         }
 
-        if (!jetTemplate.isAvailable) {
-            throw new Error("This jet is already sold or unavailable.");
-        }
+        // Generate a human-readable order number
+        const orderNumber = `ORD-${Date.now()}-${sku.split('-')[0]}`;
 
-        // 2. Create the order record
         const createdOrder = await Order.create({
+            orderNumber,
             user: userId,
-            jet: jetTemplate._id, // Save the Reference ID
+            jet: jetTemplate._id,
             finalSalePrice: jetTemplate.price,
             status: 'pending'
         });
 
-        // 3. Mark the jet as unavailable in the Jet collection
         await Jet.findByIdAndUpdate(jetTemplate._id, { isAvailable: false });
-        
-        // 4. Return populated data
-        return await Order.findById(createdOrder._id)
-            .populate('user', 'email')
-            .populate('jet', 'name sku year')
-            .lean();
 
+        return await Order.findOne({ orderNumber }).populate('user jet').lean();
     } catch (error) {
         throw new Error(error.message);
     }
 };
+
+
 
 /**
  * --- READ (User/Admin) ---
@@ -52,19 +45,37 @@ export const findAllOrdersAdmin = async () => {
     return await Order.find().populate('user jet').sort({ createdAt: -1 });
 };
 
+export const findOrderByNumber = async (orderNumber) => {
+    try {
+        return await Order.findOne({ orderNumber: orderNumber.toUpperCase() })
+            .populate('user', 'email')
+            .populate({
+                path: 'jet',
+                populate: { path: 'manufacturer', select: 'name code' } // Deep populate to see manufacturer
+            })
+            .lean();
+    } catch (error) {
+        throw new Error(`DAO Error (FindByNumber): ${error.message}`);
+    }
+};
+
 /**
  * --- UPDATE ---
  * Approves an order by serial number and flips the jet availability.
  */
-export const updateOrderBySerial = async (serialNumber, newStatus) => {
+export const updateOrderStatus = async (orderNumber, newStatus) => {
     try {
         const updatedOrder = await Order.findOneAndUpdate(
-            { instanceSerialNumber: serialNumber },
+            { orderNumber: orderNumber.toUpperCase() },
             { status: newStatus },
             { new: true }
         ).populate('user jet');
 
         if (!updatedOrder) return null;
+
+        if (newStatus === 'cancelled' && updatedOrder) {
+            await Jet.findByIdAndUpdate(updatedOrder.jet._id, { isAvailable: true });
+        }
 
         // If the order is completed, mark the jet as sold
         if (newStatus === 'completed') {
@@ -73,7 +84,7 @@ export const updateOrderBySerial = async (serialNumber, newStatus) => {
 
         return updatedOrder;
     } catch (error) {
-        console.error("DAO Error (updateOrderBySerial):", error.message);
+        console.error("DAO Error (updateOrderStatus):", error.message);
         throw error;
     }
 };
@@ -82,13 +93,14 @@ export const updateOrderBySerial = async (serialNumber, newStatus) => {
  * --- DELETE ---
  * Removes the order record. Optional: Re-lists the jet as available.
  */
-export const deleteOneOrder = async (id) => {
+export const deleteOrderByNum = async (orderNumber) => {
     try {
-        const order = await Order.findById(id);
+        const order = await Order.findOne({ orderNumber: orderNumber.toUpperCase() });
+        console.log('Did it find the order in the DAOS ? = ' + JSON.stringify(order))
         if (order) {
             // If the order was completed, deleting it makes the jet available again
             await Jet.findByIdAndUpdate(order.jet, { isAvailable: true });
-            return await Order.findByIdAndDelete(id);
+            return await Order.findOneAndDelete({ orderNumber: orderNumber.toUpperCase() });
         }
         return null;
     } catch (error) {

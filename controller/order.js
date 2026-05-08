@@ -41,25 +41,37 @@ export const getOrders = async (req, res) => {
   }
 };
 
-// --- UPDATE (Approve) ---
-export const approveOrderBySerial = async (req, res) => {
+// --- READ (Order) ---
+export const getOrderByNumber = async (req, res) => {
   try {
-    const { serialNumber } = req.body;
+    const { orderNumber } = req.params;
+    const order = await OrderDAO.findOrderByNumber(orderNumber);
 
-    if (!serialNumber) {
-      return res.status(400).json({ message: "Serial number is required" });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
     }
 
-    const approvedOrder = await OrderDAO.updateOrderBySerial(serialNumber, 'completed');
-
-    if (!approvedOrder) {
-      return res.status(404).json({ message: `No order found with serial: ${serialNumber}` });
+    // Security Check: If not an admin, check if this order belongs to the user
+    if (req.user.role !== 'admin' && order.user._id.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Access denied. You can only view your own orders." });
     }
 
-    res.status(200).json({
-      message: `Order ${serialNumber} has been approved and jet is now sold.`,
-      data: approvedOrder
-    });
+    res.status(200).json({ data: order });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// --- UPDATE (Approve) ---
+export const updateStatus = async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { status } = req.body; // e.g., { "status": "completed" }
+
+    const updated = await OrderDAO.updateOrderStatus(orderNumber, status);
+    if (!updated) return res.status(404).json({ message: "Order not found" });
+
+    res.status(200).json({ message: "Order updated", data: updated });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -68,19 +80,13 @@ export const approveOrderBySerial = async (req, res) => {
 // --- DELETE ---
 export const deleteOrder = async (req, res) => {
   try {
-    const { id } = req.params;
+    
+    const { orderNumber } = req.params;
+    console.log("DEBUG: Attempting to delete orderNumber ->", orderNumber); // Check this in your terminal!
+    const deleted = await OrderDAO.deleteOrderByNum(orderNumber);
+    if (!deleted) return res.status(404).json({ message: "Order not found" });
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid Order ID format." });
-    }
-
-    const deleted = await OrderDAO.deleteOneOrder(id);
-
-    if (!deleted) {
-      return res.status(404).json({ message: "Order not found." });
-    }
-
-    res.status(200).json({ message: "Order deleted and jet re-listed as available." });
+    res.status(200).json({ message: `Order ${orderNumber} deleted and jet re-listed.` });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

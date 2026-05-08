@@ -1,7 +1,6 @@
 import Jet from '../models/jet';
 
 // --- CREATE ---
-
 export const createOneJet = async (data) => {
   try {
     return await Jet.create(data);
@@ -11,7 +10,6 @@ export const createOneJet = async (data) => {
 };
 
 // --- READ SINGLE ---
-// Find by SKU 
 export const findJetBySku = async (sku) => {
   try {
     return await Jet.findOne({ sku: sku.toUpperCase() })

@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { 
   createPurchase, 
   getOrders, 
-  approveOrderBySerial, 
+  getOrderByNumber,
+  updateStatus, 
   deleteOrder 
 } from '../controller/order.js';
 import { protect, authorizeAdmin } from '../middleware/middleware.js';
@@ -19,6 +20,7 @@ router.post('/', protect, createPurchase);
 
 // GET: Fetch history (User sees theirs, Admin sees all)
 router.get('/', protect, getOrders);
+router.get('/:orderNumber', protect, getOrderByNumber);
 
 
 /**
@@ -27,8 +29,8 @@ router.get('/', protect, getOrders);
  */
 
 // PATCH: Approve an order via JSON body { "serialNumber": "SN-XXXXXX" }
-router.patch('/approve', protect, authorizeAdmin, approveOrderBySerial);
+router.patch('/:orderNumber', protect, authorizeAdmin, updateStatus);
 
 // DELETE: Remove an order record and re-list the jet by ID
-router.delete('/:id', protect, authorizeAdmin, deleteOrder);
+router.delete('/:orderNumber', protect, authorizeAdmin, deleteOrder);
 export default router;
