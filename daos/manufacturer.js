@@ -1,7 +1,7 @@
 import Manufacturer from '../models/manufacturer';
 
 export const createOneManufacturer = async (data) => {
-  return await Manufacturer.create(data); // Using .create() instead of .insertOne() for Mongoose
+  return await Manufacturer.create(data);
 };
 
 export const findByCode = async (code) => {

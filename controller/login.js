@@ -21,7 +21,7 @@ export const login = async (req, res) => {
     }
 
     // 3. Create the JWT Token
-    // We include the ID and Role so the middleware can use them later
+    // include the ID and Role so the middleware can use them later
     const token = jwt.sign(
       { id: user._id, role: user.role },
       JWT_SECRET,

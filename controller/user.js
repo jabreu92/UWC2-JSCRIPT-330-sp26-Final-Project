@@ -33,7 +33,6 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// READ ALL
 export const getUsers = async (req, res) => {
     try {
         const users = await UserDAO.findAllUsers();
@@ -43,7 +42,6 @@ export const getUsers = async (req, res) => {
     }
 };
 
-// READ ONE
 export const getUserByEmail = async (req, res) => {
     try {
         const user = await UserDAO.findByEmail(req.params.email);
@@ -56,7 +54,6 @@ export const getUserByEmail = async (req, res) => {
     }
 };
 
-// UPDATE
 export const updateUser = async (req, res) => {
     try {
         const { email } = req.params;
@@ -77,7 +74,6 @@ export const updateUser = async (req, res) => {
     }
 };
 
-// UPDATE
 export const changeOwnPassword = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
@@ -106,7 +102,6 @@ export const changeOwnPassword = async (req, res) => {
   }
 };
 
-// DELETE
 export const deleteUser = async (req, res) => {
     try {
         const deleted = await UserDAO.deleteOneUser(req.params.email);

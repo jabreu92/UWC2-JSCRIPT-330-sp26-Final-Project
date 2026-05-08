@@ -1,7 +1,6 @@
 import * as OrderDAO from '../daos/order.js';
 import mongoose from 'mongoose';
 
-// --- CREATE ---
 export const createPurchase = async (req, res) => {
   try {
     const { sku } = req.body; // Changed from jetId to sku
@@ -24,7 +23,6 @@ export const createPurchase = async (req, res) => {
   }
 };
 
-// --- READ (History) ---
 export const getOrders = async (req, res) => {
   try {
     // Admin sees all orders; Regular user sees only their own
@@ -41,7 +39,6 @@ export const getOrders = async (req, res) => {
   }
 };
 
-// --- READ (Order) ---
 export const getOrderByNumber = async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -62,7 +59,6 @@ export const getOrderByNumber = async (req, res) => {
   }
 };
 
-// --- UPDATE (Approve) ---
 export const updateStatus = async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -77,12 +73,10 @@ export const updateStatus = async (req, res) => {
   }
 };
 
-// --- DELETE ---
 export const deleteOrder = async (req, res) => {
   try {
     
     const { orderNumber } = req.params;
-    console.log("DEBUG: Attempting to delete orderNumber ->", orderNumber); // Check this in your terminal!
     const deleted = await OrderDAO.deleteOrderByNum(orderNumber);
     if (!deleted) return res.status(404).json({ message: "Order not found" });
 

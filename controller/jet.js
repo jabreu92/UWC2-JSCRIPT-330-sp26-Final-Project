@@ -2,10 +2,6 @@ import * as JetDAO from '../daos/jet.js';
 import { findByCode } from '../daos/manufacturer.js';
 import mongoose from 'mongoose';
 
-// Helper to check if an ID is a valid MongoDB ObjectId
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
-
-// --- CREATE ---
 export const createJet = async (req, res) => {
   try {
     const { sku, name, year, price, manufacturerCode, range, capacity } = req.body;
@@ -17,14 +13,14 @@ export const createJet = async (req, res) => {
 
     // 2. The Look-up: Convert Code -> ID
     const manufacturerDoc = await findByCode(manufacturerCode);
-    
+
     if (!manufacturerDoc) {
-      return res.status(404).json({ 
-        message: `Manufacturer with code '${manufacturerCode}' not found. Please create the manufacturer first.` 
+      return res.status(404).json({
+        message: `Manufacturer with code '${manufacturerCode}' not found. Please create the manufacturer first.`
       });
     }
 
-    // 3. Create the Jet using the ID found
+    // 3. Create the Jet 
     const newJet = await JetDAO.createOneJet({
       sku,
       name,
@@ -32,7 +28,7 @@ export const createJet = async (req, res) => {
       price,
       range,
       capacity,
-      manufacturer: manufacturerDoc._id // We use the internal ID for the database relationship
+      manufacturer: manufacturerDoc._id // Use the internal ID for db relationship
     });
 
     res.status(201).json({
@@ -44,10 +40,9 @@ export const createJet = async (req, res) => {
   }
 };
 
-// --- GET ---
 export const getJetBySku = async (req, res) => {
   try {
-    const { sku } = req.params; // Expecting /api/jets/:sku
+    const { sku } = req.params;
 
     if (!sku) {
       return res.status(400).json({ message: "SKU is required." });
@@ -65,14 +60,11 @@ export const getJetBySku = async (req, res) => {
   }
 };
 
-// --- GET ALL ---
-
-// --- GET ALL (Role-Based) ---
 export const getJets = async (req, res) => {
   try {
     let jets;
 
-    // Logic: Admins see the full list, regular users see only available jets
+    // Admins see the full list, regular users see only available jets
     if (req.user && req.user.role === 'admin') {
       jets = await JetDAO.getAllJets();
     } else {
@@ -91,18 +83,19 @@ export const getJets = async (req, res) => {
   }
 };
 
-// --- UPDATE ---
+
 export const updateJet = async (req, res) => {
   try {
-    const { sku } = req.params; // Captured from URL: /api/jets/:sku
+    const { sku } = req.params;
 
     if (!sku) {
       return res.status(400).json({ message: "SKU is required for update." });
     }
+
     if (req.body.price !== undefined && req.body.price <= 0) {
       return res.status(400).json({ message: "Price must be a positive number." });
     }
-    // Prevent stripping key data
+
     if (req.body.name === "" || req.body.price === 0) {
       return res.status(400).json({ message: "Name or Price cannot be empty." });
     }
@@ -119,7 +112,6 @@ export const updateJet = async (req, res) => {
   }
 };
 
-// --- DELETE ---
 export const deleteJet = async (req, res) => {
   try {
     const { sku } = req.params;

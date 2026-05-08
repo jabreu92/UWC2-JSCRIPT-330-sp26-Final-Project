@@ -1,6 +1,5 @@
 import Jet from '../models/jet';
 
-// --- CREATE ---
 export const createOneJet = async (data) => {
   try {
     return await Jet.create(data);
@@ -9,7 +8,6 @@ export const createOneJet = async (data) => {
   }
 };
 
-// --- READ SINGLE ---
 export const findJetBySku = async (sku) => {
   try {
     return await Jet.findOne({ sku: sku.toUpperCase() })
@@ -20,7 +18,6 @@ export const findJetBySku = async (sku) => {
   }
 };
 
-// --- READ ALL (Admin) ---
 export const getAllJets = async () => {
   try {
     return await Jet.find().populate('manufacturer', 'name').lean();
@@ -29,7 +26,6 @@ export const getAllJets = async () => {
   }
 };
 
-// --- READ AVAILABLE (User) ---
 export const findAvailableJets = async () => {
   try {
     return await Jet.find({ isAvailable: true })
@@ -40,7 +36,6 @@ export const findAvailableJets = async () => {
   }
 };
 
-// --- UPDATE ---
 export const updateOneJetBySku = async (sku, updateData) => {
   try {
     return await Jet.findOneAndUpdate(
@@ -53,7 +48,6 @@ export const updateOneJetBySku = async (sku, updateData) => {
   }
 };
 
-// --- DELETE ---
 export const deleteOneJetBySku = async (sku) => {
   try {
     return await Jet.findOneAndDelete({ sku: sku.toUpperCase() });

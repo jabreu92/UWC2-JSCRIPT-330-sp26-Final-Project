@@ -2,10 +2,6 @@ import Order from '../models/order.js';
 import Jet from '../models/jet.js';
 import { findJetBySku } from './jet.js';
 
-/**
- * --- CREATE ---
- * Captures a snapshot of the price and creates a pending order.
- */
 export const createOneOrder = async (userId, sku) => {
     try {
         const jetTemplate = await findJetBySku(sku);
@@ -32,11 +28,6 @@ export const createOneOrder = async (userId, sku) => {
     }
 };
 
-
-
-/**
- * --- READ (User/Admin) ---
- */
 export const findOrdersByUser = async (userId) => {
     return await Order.find({ user: userId }).populate('jet').sort({ createdAt: -1 });
 };
@@ -59,10 +50,6 @@ export const findOrderByNumber = async (orderNumber) => {
     }
 };
 
-/**
- * --- UPDATE ---
- * Approves an order by serial number and flips the jet availability.
- */
 export const updateOrderStatus = async (orderNumber, newStatus) => {
     try {
         const updatedOrder = await Order.findOneAndUpdate(
@@ -89,10 +76,6 @@ export const updateOrderStatus = async (orderNumber, newStatus) => {
     }
 };
 
-/**
- * --- DELETE ---
- * Removes the order record. Optional: Re-lists the jet as available.
- */
 export const deleteOrderByNum = async (orderNumber) => {
     try {
         const order = await Order.findOne({ orderNumber: orderNumber.toUpperCase() });
