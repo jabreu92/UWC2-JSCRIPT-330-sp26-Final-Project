@@ -11,12 +11,14 @@ export const createOneJet = async (data) => {
 };
 
 // --- READ SINGLE ---
-export const findJetById = async (id) => {
+// Find by SKU 
+export const findJetBySku = async (sku) => {
   try {
-    // .populate('manufacturer') is added here too so the UI gets full details
-    return await Jet.findById(id).populate('manufacturer', 'name').lean();
+    return await Jet.findOne({ sku: sku.toUpperCase() })
+      .populate('manufacturer')
+      .lean();
   } catch (error) {
-    throw new Error(`DAO Error (FindById): ${error.message}`);
+    throw new Error(`DAO Error (findJetBySku): ${error.message}`);
   }
 };
 
@@ -41,24 +43,23 @@ export const findAvailableJets = async () => {
 };
 
 // --- UPDATE ---
-export const updateOneJet = async (id, data) => {
+export const updateOneJetBySku = async (sku, updateData) => {
   try {
-    // { new: true } returns the document AFTER the update
-    // { runValidators: true } ensures the update follows schema rules (like min price)
-    return await Jet.findByIdAndUpdate(id, data, { 
-      new: true, 
-      runValidators: true 
-    }).populate('manufacturer', 'name');
+    return await Jet.findOneAndUpdate(
+      { sku: sku.toUpperCase() },
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('manufacturer');
   } catch (error) {
-    throw new Error(`DAO Error (Update): ${error.message}`);
+    throw new Error(`DAO Error (UpdateBySku): ${error.message}`);
   }
 };
 
 // --- DELETE ---
-export const deleteOneJet = async (id) => {
+export const deleteOneJetBySku = async (sku) => {
   try {
-    return await Jet.findByIdAndDelete(id);
+    return await Jet.findOneAndDelete({ sku: sku.toUpperCase() });
   } catch (error) {
-    throw new Error(`DAO Error (Delete): ${error.message}`);
+    throw new Error(`DAO Error (DeleteBySku): ${error.message}`);
   }
 };

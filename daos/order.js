@@ -1,40 +1,49 @@
 import Order from '../models/order.js';
 import Jet from '../models/jet.js';
-import { findJetById } from './jet.js';
+import { findJetBySku } from './jet.js';
 
 /**
  * --- CREATE ---
  * Captures a snapshot of the price and creates a pending order.
  */
-export const createOneOrder = async (userId, jetId) => {
+export const createOneOrder = async (userId, sku) => {
     try {
-        // 1. Get the jet for the price snapshot
-        const jetTemplate = await findJetById(jetId);
-        if (!jetTemplate || !jetTemplate.isAvailable) {
-            throw new Error("Jet is unavailable.");
+        // 1. Find the jet by its unique SKU instead of ID
+        // .findOne is used because SKU is a unique string
+        const jetTemplate = await findJetBySku({ sku: sku.toUpperCase() });
+
+        if (!jetTemplate) {
+            throw new Error(`No jet found with SKU: ${sku}`);
         }
 
-        // 2. Create the order
+        if (!jetTemplate.isAvailable) {
+            throw new Error("This jet is already sold or unavailable.");
+        }
+
+        // 2. Create the order record
+        // We still store the jet's _id in the database for the relationship
         const createdOrder = await Order.create({
             user: userId,
-            jet: jetId,
+            jet: jetTemplate._id, 
             finalSalePrice: jetTemplate.price,
             status: 'pending'
         });
-        // 3.Mark the jet as unavailable immediately
-        await Jet.findByIdAndUpdate(jetId, { isAvailable: false });
+
+        // 3. Mark the jet as unavailable immediately
+        jetTemplate.isAvailable = false;
+        await jetTemplate.save();
         
-        // 4. Populate the fields before returning to the controller
-        // We select 'email' for user and 'name' for jet
+        // 4. Return populated data so Postman shows the Jet Name and User Email
         return await Order.findById(createdOrder._id)
             .populate('user', 'email')
-            .populate('jet', 'name')
+            .populate('jet', 'name sku year')
             .lean();
 
     } catch (error) {
+        // Pass the error up to the controller to handle the res.status
         throw new Error(error.message);
     }
-}
+};
 
 /**
  * --- READ (User/Admin) ---
