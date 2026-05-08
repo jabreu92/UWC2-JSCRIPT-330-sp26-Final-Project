@@ -1,12 +1,14 @@
 import Manufacturer from '../models/manufacturer';
-// CRUD Operations for Jet
-export const createOneManufacturer = async (data) => Manufacturer.insertOne(data);
 
-export const findByName = async (name) => {
+export const createOneManufacturer = async (data) => {
+  return await Manufacturer.create(data); // Using .create() instead of .insertOne() for Mongoose
+};
+
+export const findByCode = async (code) => {
   try {
-    return await Manufacturer.findOne({ name: name });
-  } catch (e) {
-    throw new Error(`DAO Error (FindByName): ${error.message}`);
+    return await Manufacturer.findOne({ code: code.toUpperCase() }).lean();
+  } catch (error) {
+    throw new Error(`DAO Error (FindByCode): ${error.message}`);
   }
 };
 
@@ -18,29 +20,22 @@ export const findAllManufacturers = async () => {
   }
 };
 
-export const findManufacturerById = async (id) => {
+export const updateOneManufacturerByCode = async (code, data) => {
   try {
-    return await Manufacturer.findById(id).lean();
+    return await Manufacturer.findOneAndUpdate(
+      { code: code.toUpperCase() }, 
+      data, 
+      { new: true, runValidators: true }
+    );
   } catch (error) {
-    throw new Error(`DAO Error (FindById): ${error.message}`);
+    throw new Error(`DAO Error (UpdateByCode): ${error.message}`);
   }
 };
 
-export const updateOneManufacturer = async (id, data) => {
+export const deleteOneManufacturerByCode = async (code) => {
   try {
-    return await Manufacturer.findByIdAndUpdate(id, data, { 
-      new: true, 
-      runValidators: true 
-    });
+    return await Manufacturer.findOneAndDelete({ code: code.toUpperCase() });
   } catch (error) {
-    throw new Error(`DAO Error (Update): ${error.message}`);
-  }
-};
-
-export const deleteOneManufacturer = async (id) => {
-  try {
-    return await Manufacturer.findByIdAndDelete(id);
-  } catch (error) {
-    throw new Error(`DAO Error (Delete): ${error.message}`);
+    throw new Error(`DAO Error (DeleteByCode): ${error.message}`);
   }
 };

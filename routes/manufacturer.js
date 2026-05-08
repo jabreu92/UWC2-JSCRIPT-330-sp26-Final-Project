@@ -1,17 +1,22 @@
 import { Router } from 'express';
-import { createManufacturer, updateManufacturer, deleteManufacturer, getManufacturerById, getManufacturers } from '../controller/manufacturer.js';
+import { 
+  createManufacturer, 
+  updateManufacturer, 
+  deleteManufacturer, 
+  getManufacturerByCode, 
+  getManufacturers 
+} from '../controller/manufacturer.js';
 import { protect, authorizeAdmin } from '../middleware/middleware.js';
 
 const router = Router();
 
-
-// Everyone can view manufacturers
+// Everyone can view
 router.get('/', getManufacturers);
-router.get('/:id', getManufacturerById);
+router.get('/:code', getManufacturerByCode); // Now uses code e.g., /api/manufacturers/BOM
 
-// Only Admins can modify the list
+// Only Admins
 router.post('/', protect, authorizeAdmin, createManufacturer);
-router.put('/:id', protect, authorizeAdmin, updateManufacturer);
-router.delete('/:id', protect, authorizeAdmin, deleteManufacturer);
+router.put('/:code', protect, authorizeAdmin, updateManufacturer);
+router.delete('/:code', protect, authorizeAdmin, deleteManufacturer);
 
 export default router;

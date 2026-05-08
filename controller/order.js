@@ -4,26 +4,23 @@ import mongoose from 'mongoose';
 // --- CREATE ---
 export const createPurchase = async (req, res) => {
   try {
-    const { jetId } = req.body;
-    const userId = req.user.id; // From 'protect' middleware
+    const { sku } = req.body; // Changed from jetId to sku
+    const userId = req.user.id;
 
-    if (!jetId) {
-      return res.status(400).json({ message: "jetId is required to make a purchase." });
+    if (!sku) {
+      return res.status(400).json({ message: "SKU is required to make a purchase." });
     }
 
-    const order = await OrderDAO.createOneOrder(userId, jetId);
-
-    // If the DAO returns null (e.g., jet was already sold), send a 400
-    if (!order) {
-      return res.status(400).json({ message: "Purchase failed. Jet may be unavailable." });
-    }
+    // Call the DAO with the SKU string
+    const order = await OrderDAO.createOneOrder(userId, sku);
 
     res.status(201).json({
       message: "Purchase order created successfully",
       data: order
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    // Catching the "No jet found" or "Already sold" errors from the DAO
+    res.status(400).json({ message: error.message });
   }
 };
 

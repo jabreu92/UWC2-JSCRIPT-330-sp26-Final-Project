@@ -8,9 +8,8 @@ import { findJetBySku } from './jet.js';
  */
 export const createOneOrder = async (userId, sku) => {
     try {
-        // 1. Find the jet by its unique SKU instead of ID
-        // .findOne is used because SKU is a unique string
-        const jetTemplate = await findJetBySku({ sku: sku.toUpperCase() });
+        // 1. Find the jet by SKU string
+        const jetTemplate = await findJetBySku(sku);
 
         if (!jetTemplate) {
             throw new Error(`No jet found with SKU: ${sku}`);
@@ -21,26 +20,23 @@ export const createOneOrder = async (userId, sku) => {
         }
 
         // 2. Create the order record
-        // We still store the jet's _id in the database for the relationship
         const createdOrder = await Order.create({
             user: userId,
-            jet: jetTemplate._id, 
+            jet: jetTemplate._id, // Save the Reference ID
             finalSalePrice: jetTemplate.price,
             status: 'pending'
         });
 
-        // 3. Mark the jet as unavailable immediately
-        jetTemplate.isAvailable = false;
-        await jetTemplate.save();
+        // 3. Mark the jet as unavailable in the Jet collection
+        await Jet.findByIdAndUpdate(jetTemplate._id, { isAvailable: false });
         
-        // 4. Return populated data so Postman shows the Jet Name and User Email
+        // 4. Return populated data
         return await Order.findById(createdOrder._id)
             .populate('user', 'email')
             .populate('jet', 'name sku year')
             .lean();
 
     } catch (error) {
-        // Pass the error up to the controller to handle the res.status
         throw new Error(error.message);
     }
 };
