@@ -1,21 +1,37 @@
 import User from '../models/user';
-// CRUD Operations for Jet
-export const createOneUser = async (data) => User.insertOne(data);
+
+export const createOneUser = async (data) => await User.create(data);
+
+export const findAllUsers = async () => await User.find().select('-password').lean();
 
 export const findByEmail = async (email) => {
-  try {
-    const user = await User.findOne({ email: email });
-    return user;
-  } catch (e) {
-    return null;
-  }
+    return await User.findOne({ email: email.toLowerCase() });
 };
 
 export const findById = async (id) => {
-  try {
-    const user = await User.findOne({ _id: id  });
-    return user;
-  } catch (e) {
-    return null;
-  }
+  return await await User.findOne({ _id: id  });
+};
+
+export const updateOneUser = async (email, data) => {
+    return await User.findOneAndUpdate(
+        { email: email.toLowerCase() },
+        data,
+        { new: true, runValidators: true }
+    ).select('-password');
+};
+
+export const deleteOneUser = async (email) => {
+    return await User.findOneAndDelete({ email: email.toLowerCase() });
+};
+
+export const updatePasswordByEmail = async (email, newHashedPassword) => {
+    try {
+        return await User.findOneAndUpdate(
+            { email: email.toLowerCase() },
+            { password: newHashedPassword },
+            { new: true }
+        ).select('-password');
+    } catch (error) {
+        throw new Error(`DAO Error (UpdatePassword): ${error.message}`);
+    }
 };
