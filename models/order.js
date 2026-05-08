@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  jet: { type: mongoose.Schema.Types.ObjectId, ref: 'JetModel', required: true },
+  jet: { type: mongoose.Schema.Types.ObjectId, ref: 'Jet', required: true },
   
   // This field turns the generic model into a unique instance
   instanceSerialNumber: { 
