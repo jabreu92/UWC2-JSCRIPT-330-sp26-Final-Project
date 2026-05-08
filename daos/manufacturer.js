@@ -4,18 +4,43 @@ export const createOneManufacturer = async (data) => Manufacturer.insertOne(data
 
 export const findByName = async (name) => {
   try {
-    const manufacturer = await Manufacturer.findOne({ name: name });
-    return manufacturer;
+    return await Manufacturer.findOne({ name: name });
   } catch (e) {
-    return null;
+    throw new Error(`DAO Error (FindByName): ${error.message}`);
   }
 };
 
-export const findById = async (id) => {
+export const findAllManufacturers = async () => {
   try {
-    const manufacturer = await Manufacturer.findOne({ _id: id  });
-    return manufacturer;
-  } catch (e) {
-    return null;
+    return await Manufacturer.find().lean();
+  } catch (error) {
+    throw new Error(`DAO Error (FindAll): ${error.message}`);
+  }
+};
+
+export const findManufacturerById = async (id) => {
+  try {
+    return await Manufacturer.findById(id).lean();
+  } catch (error) {
+    throw new Error(`DAO Error (FindById): ${error.message}`);
+  }
+};
+
+export const updateOneManufacturer = async (id, data) => {
+  try {
+    return await Manufacturer.findByIdAndUpdate(id, data, { 
+      new: true, 
+      runValidators: true 
+    });
+  } catch (error) {
+    throw new Error(`DAO Error (Update): ${error.message}`);
+  }
+};
+
+export const deleteOneManufacturer = async (id) => {
+  try {
+    return await Manufacturer.findByIdAndDelete(id);
+  } catch (error) {
+    throw new Error(`DAO Error (Delete): ${error.message}`);
   }
 };
