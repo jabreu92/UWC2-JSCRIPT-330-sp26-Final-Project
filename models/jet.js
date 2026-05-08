@@ -9,4 +9,4 @@ const jetModelSchema = new mongoose.Schema({
   isAvailable: { type: Boolean, default: true } // Toggle this if the last one is sold
 });
 
-export default mongoose.model('JetModel', jetModelSchema);
+export default mongoose.model('Jet', jetModelSchema);

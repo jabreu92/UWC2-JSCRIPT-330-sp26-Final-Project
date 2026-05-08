@@ -1,13 +1,16 @@
 import { Router } from 'express';
-import { createJet } from '../controller/jet.js';
+import { createJet, getJets, getJetById, updateJet, deleteJet } from '../controller/jet.js';
 import { protect, authorizeAdmin } from '../middleware/middleware.js';
 
 const router = Router();
 
-// Logic:
-// 1. protect: Validates the token and finds the user
-// 2. authorizeAdmin: Checks if that user is an Admin
-// 3. createJet: Actually runs the code to add a jet
+// PUBLIC/REGULAR ACCESS (Must be logged in)
+router.get('/', protect, getJets);
+router.get('/:id', protect, getJetById);
+
+// ADMIN ONLY ACCESS
 router.post('/', protect, authorizeAdmin, createJet);
+router.put('/:id', protect, authorizeAdmin, updateJet);
+router.delete('/:id', protect, authorizeAdmin, deleteJet);
 
 export default router;
