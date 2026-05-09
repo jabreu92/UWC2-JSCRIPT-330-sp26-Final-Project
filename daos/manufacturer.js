@@ -34,8 +34,10 @@ export const updateOneManufacturerByCode = async (code, data) => {
 
 export const deleteOneManufacturerByCode = async (code) => {
   try {
+    console.log('SIII')
     return await Manufacturer.findOneAndDelete({ code: code.toUpperCase() });
   } catch (error) {
+    console.log('Que paso')
     throw new Error(`DAO Error (DeleteByCode): ${error.message}`);
   }
 };
