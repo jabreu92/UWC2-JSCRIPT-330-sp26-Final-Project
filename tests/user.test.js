@@ -184,5 +184,12 @@ describe('User Controller & Routes', () => {
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.statusCode).toEqual(404);
     });
+    it('should return 400 if email is already taken during registration', async () => {
+      UserDAO.findByEmail.mockResolvedValue({ email: 'taken@jet.com' }); // Triggers line 27
+      const res = await request(app)
+        .post('/user')
+        .send({ email: 'taken@jet.com', password: 'password123' });
+      expect(res.statusCode).toEqual(400);
+    });
   });
 });
