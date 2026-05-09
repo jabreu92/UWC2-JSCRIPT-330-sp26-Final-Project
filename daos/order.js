@@ -79,7 +79,6 @@ export const updateOrderStatus = async (orderNumber, newStatus) => {
 export const deleteOrderByNum = async (orderNumber) => {
     try {
         const order = await Order.findOne({ orderNumber: orderNumber.toUpperCase() });
-        console.log('Did it find the order in the DAOS ? = ' + JSON.stringify(order))
         if (order) {
             // If the order was completed, deleting it makes the jet available again
             await Jet.findByIdAndUpdate(order.jet, { isAvailable: true });

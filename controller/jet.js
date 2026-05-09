@@ -63,7 +63,6 @@ export const getJetBySku = async (req, res) => {
 export const getJets = async (req, res) => {
   try {
     let jets;
-
     // Admins see the full list, regular users see only available jets
     if (req.user && req.user.role === 'admin') {
       jets = await JetDAO.getAllJets();

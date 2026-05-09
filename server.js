@@ -1,9 +1,9 @@
 import express from 'express';
 import routes from './routes';
 
-const server = express();
-server.use(express.json());
+const app = express();
+app.use(express.json());
 
-server.use(routes);
+app.use(routes);
 
-export default server;
+export default app;

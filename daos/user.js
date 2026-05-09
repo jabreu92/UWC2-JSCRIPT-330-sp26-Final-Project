@@ -9,7 +9,7 @@ export const findByEmail = async (email) => {
 };
 
 export const findById = async (id) => {
-  return await await User.findOne({ _id: id  });
+  return await User.findOne({ _id: id  });
 };
 
 export const updateOneUser = async (email, data) => {
