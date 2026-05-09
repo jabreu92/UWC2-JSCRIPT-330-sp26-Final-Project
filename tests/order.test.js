@@ -40,8 +40,8 @@ describe('Order Controller & Routes', () => {
         jest.spyOn(User, 'findById').mockImplementation((id) => ({
             exec: jest.fn().mockResolvedValue(
                 id === mockAdminId ? { _id: mockAdminId, role: 'admin' } :
-                id === mockUserId ? { _id: mockUserId, role: 'regular' } :
-                { _id: mockOtherUserId, role: 'regular' }
+                    id === mockUserId ? { _id: mockUserId, role: 'regular' } :
+                        { _id: mockOtherUserId, role: 'regular' }
             )
         }));
     });
@@ -60,15 +60,15 @@ describe('Order Controller & Routes', () => {
         it('should create an order for a logged-in user', async () => {
             const orderData = { sku: 'G650' };
 
-            jest.spyOn(JetDAO, 'findJetBySku').mockResolvedValue({ 
-                sku: 'G650', 
+            jest.spyOn(JetDAO, 'findJetBySku').mockResolvedValue({
+                sku: 'G650',
                 isAvailable: true,
-                price: 50000000 
+                price: 50000000
             });
 
-            const mockCreate = jest.spyOn(OrderDAO, 'createOneOrder').mockResolvedValue({ 
-                orderNumber: 'ORD-123', 
-                userId: mockUserId 
+            const mockCreate = jest.spyOn(OrderDAO, 'createOneOrder').mockResolvedValue({
+                orderNumber: 'ORD-123',
+                userId: mockUserId
             });
 
             const res = await request(app)
@@ -108,16 +108,24 @@ describe('Order Controller & Routes', () => {
             // Matching against mockUserId string
             expect(mockSpy).toHaveBeenCalledWith(mockUserId);
         });
+
+        it('should return 500 if getAllOrders fails', async () => {
+            OrderDAO.findAllOrdersAdmin.mockRejectedValue(new Error('DB Fail')); // Line 10
+            const res = await request(app)
+                .get('/order')
+                .set('Authorization', `Bearer ${adminToken}`);
+            expect(res.statusCode).toEqual(500);
+        });
     });
 
     // --- GET SINGLE ORDER ---
     describe('GET /order/:orderNumber', () => {
         it('should allow a user to view their own order', async () => {
-            const mockOrder = { 
-                orderNumber: 'ORD-123', 
+            const mockOrder = {
+                orderNumber: 'ORD-123',
                 user: { _id: mockUserId } // Matches req.user.id check in controller
             };
-            
+
             jest.spyOn(OrderDAO, 'findOrderByNumber').mockResolvedValue(mockOrder);
 
             const res = await request(app)
@@ -129,11 +137,11 @@ describe('Order Controller & Routes', () => {
         });
 
         it('should return 403 if user attempts to view another user\'s order', async () => {
-            const mockOrder = { 
-                orderNumber: 'ORD-999', 
+            const mockOrder = {
+                orderNumber: 'ORD-999',
                 user: { _id: mockAdminId } // Order belongs to admin
             };
-            
+
             jest.spyOn(OrderDAO, 'findOrderByNumber').mockResolvedValue(mockOrder);
 
             const res = await request(app)
@@ -142,6 +150,14 @@ describe('Order Controller & Routes', () => {
 
             expect(res.statusCode).toEqual(403);
         });
+
+        it('should return 404 if getting specific order fails', async () => {
+            OrderDAO.findOrderByNumber.mockResolvedValue(null);
+            const res = await request(app)
+                .get('/order/123')
+                .set('Authorization', `Bearer ${adminToken}`);
+            expect(res.statusCode).toEqual(404);
+        });
     });
 
     // --- ADMIN: UPDATE STATUS ---
@@ -149,7 +165,7 @@ describe('Order Controller & Routes', () => {
         it('should allow admin to update order status', async () => {
             const updatePayload = { status: 'completed' };
             const mockUpdated = { orderNumber: 'ORD-123', status: 'completed' };
-            
+
             jest.spyOn(OrderDAO, 'updateOrderStatus').mockResolvedValue(mockUpdated);
 
             const res = await request(app)
@@ -183,6 +199,25 @@ describe('Order Controller & Routes', () => {
                 .set('Authorization', `Bearer ${regularToken}`);
 
             expect(res.statusCode).toEqual(403);
+        });
+    });
+
+    describe('Order - Extra Coverage', () => {
+        it('should return 404 if order ID does not exist', async () => {
+            OrderDAO.findOrderByNumber.mockResolvedValue(null);
+            const res = await request(app)
+                .get('/order/645645645')
+                .set('Authorization', `Bearer ${adminToken}`);
+            expect(res.statusCode).toEqual(404); // Covers line 22
+        });
+
+        it('should return 500 if order creation crashes', async () => {
+            OrderDAO.createOneOrder.mockRejectedValue(new Error('Crash'));
+            const res = await request(app)
+                .post('/order')
+                .set('Authorization', `Bearer ${regularToken}`)
+                .send({ jetSku: 'G650' });
+            expect(res.statusCode).toEqual(400); // Covers line 58/catch block
         });
     });
 });

@@ -77,7 +77,6 @@ describe('User Controller & Routes', () => {
         .set('Authorization', 'Bearer not-a-valid-token');
       expect(res.statusCode).toEqual(401);
     });
-    
 
   });
 
@@ -165,6 +164,25 @@ describe('User Controller & Routes', () => {
         .get('/user')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.statusCode).toEqual(500);
+    });
+  });
+
+  describe('User Controller - Branch Boosters', () => {
+    it('should return 404 if changing password for non-existent user', async () => {
+      UserDAO.findByEmail.mockResolvedValue(null); // Line 104
+      const res = await request(app)
+        .patch('/user/change-password')
+        .set('Authorization', `Bearer ${regularToken}`)
+        .send({ oldPassword: 'any', newPassword: 'new' });
+      expect(res.statusCode).toEqual(404);
+    });
+
+    it('should return 404 if deleting non-existent user', async () => {
+      UserDAO.deleteOneUser.mockResolvedValue(null); // Line 119
+      const res = await request(app)
+        .delete('/user/fake@test.com')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.statusCode).toEqual(404);
     });
   });
 });

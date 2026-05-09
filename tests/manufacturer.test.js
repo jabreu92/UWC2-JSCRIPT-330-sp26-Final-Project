@@ -180,4 +180,23 @@ describe('Manufacturer Controller & Routes', () => {
             expect(mockDelete).toHaveBeenCalledWith(mockCode);
         });
     });
+
+    describe('Manufacturer - Extra Coverage', () => {
+  it('should return 404 if manufacturer not found by code', async () => {
+    ManufacturerDAO.findByCode.mockResolvedValue(null);
+    const res = await request(app)
+      .get('/manufacturer/FAKE')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.statusCode).toEqual(404); // Covers line 20
+  });
+
+  it('should return 404 if updating non-existent manufacturer', async () => {
+    ManufacturerDAO.updateOneManufacturerByCode.mockResolvedValue(null);
+    const res = await request(app)
+      .patch('/manufacturer/FAKE')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'New Name' });
+    expect(res.statusCode).toEqual(404); // Covers line 64
+  });
+});
 }); 
