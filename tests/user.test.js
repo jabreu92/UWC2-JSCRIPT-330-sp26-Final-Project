@@ -7,7 +7,7 @@ import * as UserDAO from '../daos/user.js';
 import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import bcrypt from 'bcrypt'; // Ensure this matches the import/require in your controller
+import bcrypt from 'bcrypt'; 
 
 // 2. Mock the DAO module
 jest.mock('../daos/user.js');
