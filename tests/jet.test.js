@@ -86,6 +86,13 @@ describe('Jet Controller & Routes', () => {
             const res = await request(app).get('/jet');
             expect(res.statusCode).toEqual(401);
         });
+        it('should return 500 if the database crashes during jet lookup', async () => {
+            JetDAO.getAllJets.mockRejectedValue(new Error('DB CRASH'));
+            const res = await request(app)
+                .get('/jet')
+                .set('Authorization', `Bearer ${adminToken}`);
+            expect(res.statusCode).toEqual(500);
+        });
     });
 
     // --- GET SINGLE JET BY SKU ---
@@ -173,6 +180,23 @@ describe('Jet Controller & Routes', () => {
             expect(res.statusCode).toEqual(400);
             expect(res.body.message).toBe("Price must be a positive number.");
         });
+
+        it('should return 404 if updating a non-existent jet', async () => {
+            JetDAO.updateOneJetBySku.mockResolvedValue(null);
+            const res = await request(app)
+                .patch('/jet/MISSING-123')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({ price: 1000 });
+            expect(res.statusCode).toEqual(404);
+        });
+
+        it('should return 404 if deleting a non-existent jet', async () => {
+            JetDAO.deleteOneJetBySku.mockResolvedValue(null);
+            const res = await request(app)
+                .delete('/jet/MISSING-123')
+                .set('Authorization', `Bearer ${adminToken}`);
+            expect(res.statusCode).toEqual(404);
+        });
     });
 
     // --- DELETE JET (Admin Only) ---
@@ -186,6 +210,23 @@ describe('Jet Controller & Routes', () => {
 
             expect(res.statusCode).toEqual(200);
             expect(res.body.message).toContain('deleted successfully');
+        });
+
+        it('should return 404 if updating a non-existent jet', async () => {
+            JetDAO.updateOneJetBySku.mockResolvedValue(null);
+            const res = await request(app)
+                .patch('/jet/MISSING-123')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({ price: 1000 });
+            expect(res.statusCode).toEqual(404);
+        });
+
+        it('should return 404 if deleting a non-existent jet', async () => {
+            JetDAO.deleteOneJetBySku.mockResolvedValue(null);
+            const res = await request(app)
+                .delete('/jet/MISSING-123')
+                .set('Authorization', `Bearer ${adminToken}`);
+            expect(res.statusCode).toEqual(404);
         });
     });
 });

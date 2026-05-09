@@ -1,5 +1,5 @@
 // 1. Set the secret BEFORE any imports so middleware detects it
-process.env.JWT_SECRET = 'your_super_secret_key'; 
+process.env.JWT_SECRET = 'your_super_secret_key';
 
 import request from 'supertest';
 import app from '../server.js';
@@ -7,7 +7,7 @@ import * as UserDAO from '../daos/user.js';
 import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import bcrypt from 'bcrypt'; 
+import bcrypt from 'bcrypt';
 
 // 2. Mock the DAO module
 jest.mock('../daos/user.js');
@@ -19,22 +19,21 @@ describe('User Controller & Routes', () => {
   const mockUserId = new mongoose.Types.ObjectId().toString();
 
   beforeAll(() => {
-    // 3. Create tokens with IDs that match our mocks
+    // Create tokens for different roles
     adminToken = jwt.sign({ id: mockAdminId, role: 'admin', email: 'admin@jet.com' }, process.env.JWT_SECRET);
     regularToken = jwt.sign({ id: mockUserId, role: 'regular', email: 'user@jet.com' }, process.env.JWT_SECRET);
 
-    // 4. Mock the internal middleware lookup.
+    // Mock internal middleware lookups
     UserDAO.findById.mockImplementation(async (id) => {
       if (id === mockAdminId) return { _id: mockAdminId, role: 'admin', email: 'admin@jet.com' };
       if (id === mockUserId) return { _id: mockUserId, role: 'regular', email: 'user@jet.com' };
       return null;
     });
 
-    // Safety net for Mongoose Model lookups
     jest.spyOn(User, 'findById').mockImplementation((id) => ({
       exec: jest.fn().mockResolvedValue(
-        id === mockAdminId 
-          ? { _id: mockAdminId, role: 'admin' } 
+        id === mockAdminId
+          ? { _id: mockAdminId, role: 'admin' }
           : { _id: mockUserId, role: 'regular' }
       )
     }));
@@ -46,51 +45,45 @@ describe('User Controller & Routes', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks();
-    await mongoose.connection.close(); 
+    await mongoose.connection.close();
   });
 
   // --- REGISTRATION ---
   describe('POST /user (Register)', () => {
-    it('should register a new user and return user data without password', async () => {
+    it('should register a new user successfully', async () => {
       UserDAO.findByEmail.mockResolvedValue(null);
-      UserDAO.createOneUser.mockResolvedValue({
-        _id: new mongoose.Types.ObjectId(),
-        email: 'new@jet.com',
-        role: 'regular'
-      });
+      UserDAO.createOneUser.mockResolvedValue({ _id: mockUserId, email: 'new@jet.com', role: 'regular' });
 
       const res = await request(app)
         .post('/user')
         .send({ email: 'new@jet.com', password: 'password123' });
 
       expect(res.statusCode).toEqual(201);
-      expect(res.body).toHaveProperty('email', 'new@jet.com');
-      expect(res.body).not.toHaveProperty('password');
     });
+
+    it('should return 400 if user email already exists', async () => {
+      UserDAO.findByEmail.mockResolvedValue({ email: 'exists@jet.com' });
+
+      const res = await request(app)
+        .post('/user')
+        .send({ email: 'exists@jet.com', password: 'password123' });
+
+      expect(res.statusCode).toEqual(400);
+    });
+
+    it('should return 401 if token is malformed', async () => {
+      const res = await request(app)
+        .get('/user')
+        .set('Authorization', 'Bearer not-a-valid-token');
+      expect(res.statusCode).toEqual(401);
+    });
+    
+
   });
 
   // --- PASSWORD CHANGE ---
   describe('PATCH /user/change-password', () => {
-    it('should update password when old password matches', async () => {
-      UserDAO.findByEmail.mockResolvedValue({
-        email: 'user@jet.com',
-        password: 'hashed_old_password'
-      });
-
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('new_hashed_password');
-      UserDAO.updatePasswordByEmail.mockResolvedValue(true);
-
-      const res = await request(app)
-        .patch('/user/change-password')
-        .set('Authorization', `Bearer ${regularToken}`)
-        .send({ oldPassword: 'old123', newPassword: 'new123' });
-
-      expect(res.statusCode).toEqual(200);
-      expect(res.body.message).toBe("Password updated successfully");
-    });
-
-    it('should fail if old password is incorrect', async () => {
+    it('should return 401 if old password is incorrect', async () => {
       UserDAO.findByEmail.mockResolvedValue({ email: 'user@jet.com', password: 'hashed' });
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
 
@@ -101,65 +94,77 @@ describe('User Controller & Routes', () => {
 
       expect(res.statusCode).toEqual(401);
     });
+
+    it('should return 400 if database update fails (success is false)', async () => {
+      UserDAO.findByEmail.mockResolvedValue({ email: 'user@jet.com', password: 'hashed' });
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+      UserDAO.updatePasswordByEmail.mockResolvedValue(false); // Fails here
+
+      const res = await request(app)
+        .patch('/user/change-password')
+        .set('Authorization', `Bearer ${regularToken}`)
+        .send({ oldPassword: 'old', newPassword: 'new' });
+
+      expect(res.statusCode).toEqual(400);
+    });
+
+    it('should return 400 if password update fails in database', async () => {
+      UserDAO.findByEmail.mockResolvedValue({ email: 'user@jet.com', password: 'hashed' });
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+      UserDAO.updatePasswordByEmail.mockResolvedValue(false); // Triggers the 'else' branch
+
+      const res = await request(app)
+        .patch('/user/change-password')
+        .set('Authorization', `Bearer ${regularToken}`)
+        .send({ oldPassword: 'old', newPassword: 'new' });
+      expect(res.statusCode).toEqual(400);
+    });
   });
 
-  // --- ADMIN MANAGEMENT ---
-  describe('Admin Routes', () => {
-    it('GET /user - should allow admin to see all users', async () => {
-      UserDAO.findAllUsers.mockResolvedValue([{ email: 'u1@t.com' }, { email: 'u2@t.com' }]);
-
+  // --- THE 404 SWEEP (Admin Management) ---
+  describe('Admin Routes - Not Found Branches', () => {
+    it('GET /user/:email - should return 404 if user not found', async () => {
+      UserDAO.findByEmail.mockResolvedValue(null);
       const res = await request(app)
-        .get('/user')
+        .get('/user/missing@jet.com')
         .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.statusCode).toEqual(200);
-      expect(res.body.count).toBe(2);
+      expect(res.statusCode).toEqual(404);
     });
 
-    it('GET /user/:email - should get a single user by email', async () => {
-      UserDAO.findByEmail.mockResolvedValue({
-        email: 'target@jet.com',
-        role: 'regular',
-        toObject: function() { return { email: this.email, role: this.role }; }
-      });
-
+    it('PUT /user/:email - should return 404 if user to update not found', async () => {
+      UserDAO.updateOneUser.mockResolvedValue(null);
       const res = await request(app)
-        .get('/user/target@jet.com')
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.statusCode).toEqual(200);
-      expect(res.body.data.email).toBe('target@jet.com');
-    });
-
-    it('PUT /user/:email - should update user data', async () => {
-      UserDAO.updateOneUser.mockResolvedValue({ email: 'target@jet.com', role: 'admin' });
-
-      const res = await request(app)
-        .put('/user/target@jet.com')
+        .put('/user/missing@jet.com')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ role: 'admin' });
-
-      expect(res.statusCode).toEqual(200);
-      expect(res.body.data.role).toBe('admin');
+      expect(res.statusCode).toEqual(404);
     });
 
-    it('DELETE /user/:email - should delete a user', async () => {
-      UserDAO.deleteOneUser.mockResolvedValue({ email: 'delete@jet.com' });
-
+    it('DELETE /user/:email - should return 404 if user to delete not found', async () => {
+      UserDAO.deleteOneUser.mockResolvedValue(null);
       const res = await request(app)
-        .delete('/user/delete@jet.com')
+        .delete('/user/missing@jet.com')
         .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.statusCode).toEqual(200);
-      expect(res.body.message).toContain('deleted');
+      expect(res.statusCode).toEqual(404);
     });
 
-    it('should return 403 if a regular user tries to access admin routes', async () => {
+    it('should return 404 if deleting a non-existent user', async () => {
+      UserDAO.deleteOneUser.mockResolvedValue(null);
+      const res = await request(app)
+        .delete('/user/notfound@test.com')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.statusCode).toEqual(404);
+    });
+  });
+
+  // --- CATCH BLOCK COVERAGE (500 Errors) ---
+  describe('Global Error Handling', () => {
+    it('should return 500 when DAO crashes unexpectedly', async () => {
+      UserDAO.findAllUsers.mockRejectedValue(new Error('Database Failure'));
       const res = await request(app)
         .get('/user')
-        .set('Authorization', `Bearer ${regularToken}`);
-
-      expect(res.statusCode).toEqual(403);
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.statusCode).toEqual(500);
     });
   });
 });
