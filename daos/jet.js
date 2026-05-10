@@ -67,3 +67,33 @@ export const getCatalogPerformance = async () => {
     .sort({ price: 1 })
     .explain('executionStats');
 };
+
+export const searchJets = async (searchTerm) => {
+  return await Jet.find(
+    { $text: { $search: searchTerm } },
+    { score: { $meta: "textScore" } }
+  ).sort({ score: { $meta: "textScore" } });
+};
+
+export const getJetsWithManufacturerDetails = async () => {
+  return await Jet.aggregate([
+    {
+      $lookup: {
+        from: "manufacturers",         // The collection to join
+        localField: "manufacturerCode", // Field in Jets
+        foreignField: "code",           // Field in Manufacturers
+        as: "manufacturerDetails"       // Name of the resulting array
+      }
+    },
+    { $unwind: "$manufacturerDetails" }, // Flattens the array into an object
+    {
+      $project: {
+        sku: 1,
+        name: 1,
+        price: 1,
+        "manufacturerDetails.name": 1,
+        "manufacturerDetails.country": 1
+      }
+    }
+  ]);
+};

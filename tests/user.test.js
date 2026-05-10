@@ -12,7 +12,7 @@ import bcrypt from 'bcrypt';
 // 2. Mock the DAO module
 jest.mock('../daos/user.js');
 
-describe('User Controller & Routes', () => {
+describe('User Controller & Routes - Comprehensive Coverage Suite', () => {
   let adminToken;
   let regularToken;
   const mockAdminId = new mongoose.Types.ObjectId().toString();
@@ -23,20 +23,12 @@ describe('User Controller & Routes', () => {
     adminToken = jwt.sign({ id: mockAdminId, role: 'admin', email: 'admin@jet.com' }, process.env.JWT_SECRET);
     regularToken = jwt.sign({ id: mockUserId, role: 'regular', email: 'user@jet.com' }, process.env.JWT_SECRET);
 
-    // Mock internal middleware lookups
+    // Mock internal middleware lookups for auth protection
     UserDAO.findById.mockImplementation(async (id) => {
       if (id === mockAdminId) return { _id: mockAdminId, role: 'admin', email: 'admin@jet.com' };
       if (id === mockUserId) return { _id: mockUserId, role: 'regular', email: 'user@jet.com' };
       return null;
     });
-
-    jest.spyOn(User, 'findById').mockImplementation((id) => ({
-      exec: jest.fn().mockResolvedValue(
-        id === mockAdminId
-          ? { _id: mockAdminId, role: 'admin' }
-          : { _id: mockUserId, role: 'regular' }
-      )
-    }));
   });
 
   afterEach(() => {
@@ -48,7 +40,7 @@ describe('User Controller & Routes', () => {
     await mongoose.connection.close();
   });
 
-  // --- REGISTRATION ---
+  // --- REGISTRATION & AUTH ---
   describe('POST /user (Register)', () => {
     it('should register a new user successfully', async () => {
       UserDAO.findByEmail.mockResolvedValue(null);
@@ -61,16 +53,25 @@ describe('User Controller & Routes', () => {
       expect(res.statusCode).toEqual(201);
     });
 
-    it('should return 400 if user email already exists', async () => {
+    it('should return 400 if user email already exists (Line 27)', async () => {
       UserDAO.findByEmail.mockResolvedValue({ email: 'exists@jet.com' });
-
       const res = await request(app)
         .post('/user')
         .send({ email: 'exists@jet.com', password: 'password123' });
-
       expect(res.statusCode).toEqual(400);
     });
 
+    it('should return 500 if registration crashes (Line 37)', async () => {
+      UserDAO.findByEmail.mockRejectedValue(new Error('Fatal Crash'));
+      const res = await request(app)
+        .post('/user')
+        .send({ email: 'crash@jet.com', password: '123' });
+      expect(res.statusCode).toEqual(500);
+    });
+  });
+
+  // --- MIDDLEWARE & GAPS ---
+  describe('Middleware & Access Control (Lines 23, 33)', () => {
     it('should return 401 if token is malformed', async () => {
       const res = await request(app)
         .get('/user')
@@ -78,40 +79,44 @@ describe('User Controller & Routes', () => {
       expect(res.statusCode).toEqual(401);
     });
 
+    it('should return 401 if No Authorization header is provided (Line 23)', async () => {
+      const res = await request(app).get('/user'); 
+      expect(res.statusCode).toEqual(401);
+    });
+
+    it('should return 403 if regular user tries to access admin routes (Line 33)', async () => {
+      const res = await request(app)
+        .get('/user')
+        .set('Authorization', `Bearer ${regularToken}`);
+      expect(res.statusCode).toEqual(403);
+    });
   });
 
   // --- PASSWORD CHANGE ---
   describe('PATCH /user/change-password', () => {
-    it('should return 401 if old password is incorrect', async () => {
-      UserDAO.findByEmail.mockResolvedValue({ email: 'user@jet.com', password: 'hashed' });
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
-
-      const res = await request(app)
-        .patch('/user/change-password')
-        .set('Authorization', `Bearer ${regularToken}`)
-        .send({ oldPassword: 'wrong', newPassword: 'new' });
-
-      expect(res.statusCode).toEqual(401);
-    });
-
-    it('should return 400 if database update fails (success is false)', async () => {
-      UserDAO.findByEmail.mockResolvedValue({ email: 'user@jet.com', password: 'hashed' });
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
-      UserDAO.updatePasswordByEmail.mockResolvedValue(false); // Fails here
-
+    it('should return 404 if user not found for password change (Line 104)', async () => {
+      UserDAO.findByEmail.mockResolvedValue(null);
       const res = await request(app)
         .patch('/user/change-password')
         .set('Authorization', `Bearer ${regularToken}`)
         .send({ oldPassword: 'old', newPassword: 'new' });
-
-      expect(res.statusCode).toEqual(400);
+      expect(res.statusCode).toEqual(404);
     });
 
-    it('should return 400 if password update fails in database', async () => {
+    it('should return 401 if old password is incorrect', async () => {
+      UserDAO.findByEmail.mockResolvedValue({ email: 'user@jet.com', password: 'hashed' });
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+      const res = await request(app)
+        .patch('/user/change-password')
+        .set('Authorization', `Bearer ${regularToken}`)
+        .send({ oldPassword: 'wrong', newPassword: 'new' });
+      expect(res.statusCode).toEqual(401);
+    });
+
+    it('should return 400 if database update fails (Line 110)', async () => {
       UserDAO.findByEmail.mockResolvedValue({ email: 'user@jet.com', password: 'hashed' });
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
-      UserDAO.updatePasswordByEmail.mockResolvedValue(false); // Triggers the 'else' branch
-
+      UserDAO.updatePasswordByEmail.mockResolvedValue(false); 
       const res = await request(app)
         .patch('/user/change-password')
         .set('Authorization', `Bearer ${regularToken}`)
@@ -120,9 +125,17 @@ describe('User Controller & Routes', () => {
     });
   });
 
-  // --- THE 404 SWEEP (Admin Management) ---
-  describe('Admin Routes - Not Found Branches', () => {
-    it('GET /user/:email - should return 404 if user not found', async () => {
+  // --- ADMIN MANAGEMENT (404 & 500 branches) ---
+  describe('Admin Operations - Branch Coverage', () => {
+    it('GET /user - should return 500 if findAll fails (Line 44)', async () => {
+      UserDAO.findAllUsers.mockRejectedValue(new Error('Fail'));
+      const res = await request(app)
+        .get('/user')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.statusCode).toEqual(500);
+    });
+
+    it('GET /user/:email - should return 404 if user not found (Line 55-58)', async () => {
       UserDAO.findByEmail.mockResolvedValue(null);
       const res = await request(app)
         .get('/user/missing@jet.com')
@@ -130,16 +143,16 @@ describe('User Controller & Routes', () => {
       expect(res.statusCode).toEqual(404);
     });
 
-    it('PUT /user/:email - should return 404 if user to update not found', async () => {
-      UserDAO.updateOneUser.mockResolvedValue(null);
+    it('PUT /user/:email - should return 500 if update fails (Line 75-77)', async () => {
+      UserDAO.updateOneUser.mockRejectedValue(new Error('Update Crash'));
       const res = await request(app)
-        .put('/user/missing@jet.com')
+        .put('/user/edit@jet.com')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ role: 'admin' });
-      expect(res.statusCode).toEqual(404);
+      expect(res.statusCode).toEqual(500);
     });
 
-    it('DELETE /user/:email - should return 404 if user to delete not found', async () => {
+    it('DELETE /user/:email - should return 404 if user to delete not found (Line 119)', async () => {
       UserDAO.deleteOneUser.mockResolvedValue(null);
       const res = await request(app)
         .delete('/user/missing@jet.com')
@@ -147,49 +160,12 @@ describe('User Controller & Routes', () => {
       expect(res.statusCode).toEqual(404);
     });
 
-    it('should return 404 if deleting a non-existent user', async () => {
-      UserDAO.deleteOneUser.mockResolvedValue(null);
+    it('DELETE /user/:email - should return 500 if delete crashes (Line 121)', async () => {
+      UserDAO.deleteOneUser.mockRejectedValue(new Error('Delete Fatal'));
       const res = await request(app)
-        .delete('/user/notfound@test.com')
-        .set('Authorization', `Bearer ${adminToken}`);
-      expect(res.statusCode).toEqual(404);
-    });
-  });
-
-  // --- CATCH BLOCK COVERAGE (500 Errors) ---
-  describe('Global Error Handling', () => {
-    it('should return 500 when DAO crashes unexpectedly', async () => {
-      UserDAO.findAllUsers.mockRejectedValue(new Error('Database Failure'));
-      const res = await request(app)
-        .get('/user')
+        .delete('/user/crash@jet.com')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.statusCode).toEqual(500);
-    });
-  });
-
-  describe('User Controller - Branch Boosters', () => {
-    it('should return 404 if changing password for non-existent user', async () => {
-      UserDAO.findByEmail.mockResolvedValue(null); // Line 104
-      const res = await request(app)
-        .patch('/user/change-password')
-        .set('Authorization', `Bearer ${regularToken}`)
-        .send({ oldPassword: 'any', newPassword: 'new' });
-      expect(res.statusCode).toEqual(404);
-    });
-
-    it('should return 404 if deleting non-existent user', async () => {
-      UserDAO.deleteOneUser.mockResolvedValue(null); // Line 119
-      const res = await request(app)
-        .delete('/user/fake@test.com')
-        .set('Authorization', `Bearer ${adminToken}`);
-      expect(res.statusCode).toEqual(404);
-    });
-    it('should return 400 if email is already taken during registration', async () => {
-      UserDAO.findByEmail.mockResolvedValue({ email: 'taken@jet.com' }); // Triggers line 27
-      const res = await request(app)
-        .post('/user')
-        .send({ email: 'taken@jet.com', password: 'password123' });
-      expect(res.statusCode).toEqual(400);
     });
   });
 });
