@@ -5,8 +5,7 @@ import {
     getJetBySku, 
     updateJet, 
     deleteJet,
-    searchJets,      // Add this
-    getJetDetails    // Add this
+    searchJets,     
 } from '../controller/jet.js';
 import { protect, authorizeAdmin } from '../middleware/middleware.js';
 
@@ -15,7 +14,6 @@ const router = Router();
 // 1. SPECIFIC PATHS FIRST (Static routes)
 // These must be above /:sku, otherwise /:sku will think "search" is a SKU name.
 router.get('/search', searchJets);
-router.get('/details', protect, authorizeAdmin, getJetDetails);
 
 // 2. GENERAL LISTS
 router.get('/', protect, getJets);

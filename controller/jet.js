@@ -156,13 +156,3 @@ export const searchJets = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-export const getJetDetails = async (req, res) => {
-  try {
-    // This calls the Aggregation DAO method you created earlier
-    const results = await JetDAO.getJetsWithManufacturerDetails();
-    res.status(200).json({ data: results });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
