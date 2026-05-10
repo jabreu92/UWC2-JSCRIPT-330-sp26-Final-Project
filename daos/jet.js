@@ -20,7 +20,11 @@ export const findJetBySku = async (sku) => {
 
 export const getAllJets = async () => {
   try {
-    return await Jet.find().populate('manufacturer', 'name').lean();
+    // Match the index: jetSchema.index({ createdAt: -1 });
+    return await Jet.find()
+      .populate('manufacturer', 'name')
+      .sort({ createdAt: -1 }) // Add sort for Admins to look created jets easily
+      .lean();
   } catch (error) {
     throw new Error(`DAO Error (GetAll): ${error.message}`);
   }
@@ -28,8 +32,10 @@ export const getAllJets = async () => {
 
 export const findAvailableJets = async () => {
   try {
+    // Match the index: jetSchema.index({ isAvailable: 1, price: 1 });
     return await Jet.find({ isAvailable: true })
       .populate('manufacturer', 'name')
+      .sort({ price: 1 }) // Users get a sorted list based on price
       .lean();
   } catch (error) {
     throw new Error(`DAO Error (FindAvailable): ${error.message}`);
@@ -54,4 +60,10 @@ export const deleteOneJetBySku = async (sku) => {
   } catch (error) {
     throw new Error(`DAO Error (DeleteBySku): ${error.message}`);
   }
+};
+
+export const getCatalogPerformance = async () => {
+  return await Jet.find({ isAvailable: true })
+    .sort({ price: 1 })
+    .explain('executionStats');
 };

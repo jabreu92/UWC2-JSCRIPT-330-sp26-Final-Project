@@ -50,37 +50,44 @@ describe('Jet DAO Logic Tests', () => {
     });
 
     describe('getAllJets', () => {
-        it('should return all jets with manufacturer names', async () => {
-            // DAO Chain: find().populate().lean()
+        it('should return all jets with manufacturer names sorted by creation date', async () => {
+            // Updated Chain: find().populate().sort().lean()
             Jet.find.mockReturnValue({
                 populate: jest.fn().mockReturnThis(),
+                sort: jest.fn().mockReturnThis(), // Added sort to the mock chain
                 lean: jest.fn().mockResolvedValue([mockJet])
             });
 
             const result = await JetDAO.getAllJets();
 
             expect(Jet.find).toHaveBeenCalled();
+            // Verify that sort was called with the correct index field
+            const jetFindCall = Jet.find();
+            expect(jetFindCall.sort).toHaveBeenCalledWith({ createdAt: -1 });
             expect(result).toHaveLength(1);
         });
     });
 
     describe('findAvailableJets', () => {
-        it('should only query jets where isAvailable is true', async () => {
+        it('should only query jets where isAvailable is true and sort by price', async () => {
             Jet.find.mockReturnValue({
                 populate: jest.fn().mockReturnThis(),
+                sort: jest.fn().mockReturnThis(), // Added sort to the mock chain
                 lean: jest.fn().mockResolvedValue([mockJet])
             });
 
             await JetDAO.findAvailableJets();
 
             expect(Jet.find).toHaveBeenCalledWith({ isAvailable: true });
+            const jetFindCall = Jet.find({ isAvailable: true });
+            expect(jetFindCall.sort).toHaveBeenCalledWith({ price: 1 }); // Verify price sort
         });
     });
 
     describe('updateOneJetBySku', () => {
         it('should update a jet and populate the manufacturer', async () => {
             const updateData = { isAvailable: false };
-            
+
             // DAO Chain: findOneAndUpdate().populate()
             Jet.findOneAndUpdate.mockReturnValue({
                 populate: jest.fn().mockResolvedValue({ ...mockJet, ...updateData })

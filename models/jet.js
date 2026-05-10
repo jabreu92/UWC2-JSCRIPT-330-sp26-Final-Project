@@ -25,4 +25,10 @@ const jetSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Uses of indexes for faster lookup
+jetSchema.index({ isAvailable: 1, price: 1 }); // Compound index for "Available jets sorted by price"
+jetSchema.index({ manufacturer: 1 }); // Fast lookup for jets by a specific brand
+jetSchema.index({ year: -1 }); // Quick sorting for "Newest Arrivals"
+jetSchema.index({ createdAt: -1 }); // Admins need to see the jets that were most recently added to the system so we add this index for descend order    
+
 export default mongoose.model('Jet', jetSchema);
