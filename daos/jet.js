@@ -20,7 +20,6 @@ export const findJetBySku = async (sku) => {
 
 export const getAllJets = async () => {
   try {
-    // Match the index: jetSchema.index({ createdAt: -1 });
     return await Jet.find()
       .populate('manufacturer', 'name')
       .sort({ createdAt: -1 }) // Add sort for Admins to look created jets easily
@@ -32,7 +31,6 @@ export const getAllJets = async () => {
 
 export const findAvailableJets = async () => {
   try {
-    // Match the index: jetSchema.index({ isAvailable: 1, price: 1 });
     return await Jet.find({ isAvailable: true })
       .populate('manufacturer', 'name')
       .sort({ price: 1 }) // Users get a sorted list based on price

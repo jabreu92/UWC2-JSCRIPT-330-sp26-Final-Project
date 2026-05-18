@@ -4,10 +4,8 @@ import Jet from '../models/jet.js';
 import * as JetDAO from '../daos/jet.js';
 import mongoose from 'mongoose';
 
-// Mock the Models
 jest.mock('../models/order.js');
 jest.mock('../models/jet.js');
-// Mock the internal DAO dependency
 jest.mock('../daos/jet.js');
 
 describe('Order DAO Logic Tests', () => {
@@ -22,17 +20,9 @@ describe('Order DAO Logic Tests', () => {
         it('should create an order and mark jet as unavailable', async () => {
             const mockJet = { _id: mockJetId, price: 500, isAvailable: true };
             
-            // 1. Mock internal DAO call
             JetDAO.findJetBySku.mockResolvedValue(mockJet);
-            
-            // 2. Mock Order.create
             Order.create.mockResolvedValue({ _id: 'newOrder', orderNumber: 'ORD-123' });
-            
-            // 3. Mock Jet update
             Jet.findByIdAndUpdate.mockResolvedValue({});
-            
-            // 4. Mock the final findOne().populate().lean() chain
-            // Mongoose chains need to be mocked step-by-step
             Order.findOne.mockReturnValue({
                 populate: jest.fn().mockReturnValue({
                     lean: jest.fn().mockResolvedValue({ orderNumber: 'ORD-123', status: 'pending' })
@@ -55,7 +45,6 @@ describe('Order DAO Logic Tests', () => {
 
     describe('findOrdersByUser', () => {
         it('should return sorted orders for a user', async () => {
-            // Mock chain: Order.find().populate().sort()
             Order.find.mockReturnValue({
                 populate: jest.fn().mockReturnValue({
                     sort: jest.fn().mockResolvedValue([{ orderNumber: 'ORD-1' }])
@@ -75,8 +64,6 @@ describe('Order DAO Logic Tests', () => {
                 status: 'cancelled', 
                 jet: { _id: mockJetId } 
             };
-
-            // Mock findOneAndUpdate().populate()
             Order.findOneAndUpdate.mockReturnValue({
                 populate: jest.fn().mockResolvedValue(mockOrder)
             });
@@ -84,7 +71,6 @@ describe('Order DAO Logic Tests', () => {
             const result = await OrderDAO.updateOrderStatus('ORD-1', 'cancelled');
 
             expect(result.status).toBe('cancelled');
-            // Verify logic that re-lists the jet
             expect(Jet.findByIdAndUpdate).toHaveBeenCalledWith(mockJetId, { isAvailable: true });
         });
     });

@@ -1,7 +1,6 @@
 import * as ManufacturerDAO from '../daos/manufacturer.js';
 import Manufacturer from '../models/manufacturer.js';
 
-// Mock the Manufacturer model
 jest.mock('../models/manufacturer.js');
 
 describe('Manufacturer DAO Logic Tests', () => {
@@ -28,7 +27,6 @@ describe('Manufacturer DAO Logic Tests', () => {
 
     describe('findByCode', () => {
         it('should find a manufacturer by code (case-insensitive) and use lean', async () => {
-            // DAO Chain: findOne().lean()
             Manufacturer.findOne.mockReturnValue({
                 lean: jest.fn().mockResolvedValue(mockManufacturer)
             });

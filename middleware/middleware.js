@@ -16,14 +16,14 @@ export const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, JWT_SECRET);
 
       // 4. Attach the user from the DB to the request (excluding password)
-      // This allows you to check req.user.role in the next middleware
+      // This allows to check req.user.role in the next middleware
       req.user = await findById(decoded.id);
 
       if (!req.user) {
         return res.status(401).json({ message: 'User no longer exists' });
       }
 
-      next(); // Move to the next function
+      next();
     } catch (error) {
       res.status(401).json({ message: 'Not authorized, token failed' });
     }

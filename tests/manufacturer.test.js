@@ -1,4 +1,3 @@
-// 1. Set the secret BEFORE any imports
 process.env.JWT_SECRET = 'your_super_secret_key';
 
 import request from 'supertest';
@@ -11,7 +10,6 @@ import Jet from '../models/jet.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
-// 2. Mock the DAOs
 jest.mock('../daos/manufacturer.js');
 jest.mock('../daos/user.js');
 
@@ -24,8 +22,6 @@ describe('Manufacturer Controller & Routes', () => {
     beforeAll(() => {
         adminToken = jwt.sign({ id: mockAdminId, role: 'admin' }, process.env.JWT_SECRET);
         regularToken = jwt.sign({ id: mockUserId, role: 'regular' }, process.env.JWT_SECRET);
-
-        // 3. Mock Middleware User Lookups
         UserDAO.findById.mockImplementation(async (id) => {
             if (id === mockAdminId) return { _id: mockAdminId, role: 'admin' };
             if (id === mockUserId) return { _id: mockUserId, role: 'regular' };
@@ -50,7 +46,6 @@ describe('Manufacturer Controller & Routes', () => {
         await mongoose.connection.close();
     });
 
-    // --- PUBLIC ACCESS: GET ALL ---
     describe('GET /manufacturer', () => {
         it('should allow public access to list all manufacturers', async () => {
             ManufacturerDAO.findAllManufacturers.mockResolvedValue([
@@ -66,7 +61,6 @@ describe('Manufacturer Controller & Routes', () => {
         });
     });
 
-    // --- PUBLIC ACCESS: GET BY CODE ---
     describe('GET /manufacturer/:code', () => {
         it('should return a manufacturer by its code', async () => {
             ManufacturerDAO.findByCode.mockResolvedValue({
@@ -91,7 +85,6 @@ describe('Manufacturer Controller & Routes', () => {
         });
     });
 
-    // --- ADMIN ACCESS: CREATE ---
     describe('POST /manufacturer', () => {
         const newMan = { name: 'Embraer', code: 'EMB', country: 'Brazil' };
 
@@ -133,7 +126,6 @@ describe('Manufacturer Controller & Routes', () => {
         });
     });
 
-    // --- ADMIN ACCESS: UPDATE ---
     describe('PUT /manufacturer/:code', () => {
         it('should allow admin to update a manufacturer', async () => {
             const updatedData = { code: 'BOM', name: 'Bombardier Aerospace' };
@@ -155,26 +147,18 @@ describe('Manufacturer Controller & Routes', () => {
         it('should allow admin to delete a manufacturer', async () => {
             const mockCode = 'BOM';
             const mockId = new mongoose.Types.ObjectId();
-
-            // 1. Mock findByCode so the controller thinks the manufacturer exists
             ManufacturerDAO.findByCode.mockResolvedValue({
                 _id: mockId,
                 code: mockCode
             });
 
-            // 2. Mock Jet.countDocuments to return 0 (no linked jets)
-            // We use jest.spyOn because Jet is a Mongoose Model
             jest.spyOn(Jet, 'countDocuments').mockResolvedValue(0);
-
-            // 3. Mock the actual deletion
             const mockDelete = jest.spyOn(ManufacturerDAO, 'deleteOneManufacturerByCode')
                 .mockResolvedValue(true);
 
             const res = await request(app)
                 .delete(`/manufacturer/${mockCode}`)
                 .set('Authorization', `Bearer ${adminToken}`);
-
-            // Assertions
             expect(res.statusCode).toEqual(200);
             expect(res.body.message).toMatch(new RegExp(`${mockCode} deleted`, 'i'));
             expect(mockDelete).toHaveBeenCalledWith(mockCode);
@@ -182,21 +166,21 @@ describe('Manufacturer Controller & Routes', () => {
     });
 
     describe('Manufacturer - Extra Coverage', () => {
-  it('should return 404 if manufacturer not found by code', async () => {
-    ManufacturerDAO.findByCode.mockResolvedValue(null);
-    const res = await request(app)
-      .get('/manufacturer/FAKE')
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.statusCode).toEqual(404); // Covers line 20
-  });
+        it('should return 404 if manufacturer not found by code', async () => {
+            ManufacturerDAO.findByCode.mockResolvedValue(null);
+            const res = await request(app)
+                .get('/manufacturer/FAKE')
+                .set('Authorization', `Bearer ${adminToken}`);
+            expect(res.statusCode).toEqual(404); // Covers line 20
+        });
 
-  it('should return 404 if updating non-existent manufacturer', async () => {
-    ManufacturerDAO.updateOneManufacturerByCode.mockResolvedValue(null);
-    const res = await request(app)
-      .patch('/manufacturer/FAKE')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'New Name' });
-    expect(res.statusCode).toEqual(404); // Covers line 64
-  });
-});
+        it('should return 404 if updating non-existent manufacturer', async () => {
+            ManufacturerDAO.updateOneManufacturerByCode.mockResolvedValue(null);
+            const res = await request(app)
+                .patch('/manufacturer/FAKE')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({ name: 'New Name' });
+            expect(res.statusCode).toEqual(404); // Covers line 64
+        });
+    });
 }); 

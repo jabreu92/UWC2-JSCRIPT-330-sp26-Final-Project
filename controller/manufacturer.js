@@ -35,17 +35,12 @@ export const getManufacturerByCode = async (req, res) => {
 
 export const getManufacturers = async (req, res) => {
   try {
-    // 1. Call the DAO to fetch all records
     const manufacturers = await ManufacturerDAO.findAllManufacturers();
-
-    // 2. Return the data with a 200 OK status
-    // Including a 'count' is helpful for frontend developers
     res.status(200).json({
       count: manufacturers.length,
       data: manufacturers
     });
   } catch (error) {
-    // 3. Handle potential database or server errors
     res.status(500).json({ 
       message: "Error retrieving manufacturers", 
       error: error.message 
@@ -58,7 +53,6 @@ export const updateManufacturer = async (req, res) => {
     const { code } = req.params;
     const updated = await ManufacturerDAO.updateOneManufacturerByCode(code, req.body);
     if (!updated) return res.status(404).json({ message: "Manufacturer not found" });
-
     res.status(200).json({ message: "Updated successfully", data: updated });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -69,11 +63,10 @@ export const deleteManufacturer = async (req, res) => {
   try {
     const { code } = req.params;
     
-    // 1. Find the manufacturer to get the _id for the Jet check
     const manufacturer = await ManufacturerDAO.findByCode(code);
     if (!manufacturer) return res.status(404).json({ message: "Manufacturer not found" });
 
-    // 2. Prevent deletion if jets are linked to this manufacturer's _id
+    // Prevent deletion if jets are linked to this manufacturer's _id
     const associatedJets = await Jet.countDocuments({ manufacturer: manufacturer._id });
     if (associatedJets > 0) {
       return res.status(400).json({

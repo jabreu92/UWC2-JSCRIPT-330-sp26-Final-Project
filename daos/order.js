@@ -11,7 +11,6 @@ export const createOneOrder = async (userId, sku) => {
 
         // Generate a human-readable order number
         const orderNumber = `ORD-${Date.now()}-${sku.split('-')[0]}`;
-
         const createdOrder = await Order.create({
             orderNumber,
             user: userId,
@@ -19,9 +18,7 @@ export const createOneOrder = async (userId, sku) => {
             finalSalePrice: jetTemplate.price,
             status: 'pending'
         });
-
         await Jet.findByIdAndUpdate(jetTemplate._id, { isAvailable: false });
-
         return await Order.findOne({ orderNumber }).populate('user jet').lean();
     } catch (error) {
         throw new Error(error.message);
@@ -42,7 +39,7 @@ export const findOrderByNumber = async (orderNumber) => {
             .populate('user', 'email')
             .populate({
                 path: 'jet',
-                populate: { path: 'manufacturer', select: 'name code' } // Deep populate to see manufacturer
+                populate: { path: 'manufacturer', select: 'name code' }
             })
             .lean();
     } catch (error) {

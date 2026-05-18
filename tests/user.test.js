@@ -1,4 +1,4 @@
-// 1. Set the secret BEFORE any imports so middleware detects it
+
 process.env.JWT_SECRET = 'your_super_secret_key';
 
 import request from 'supertest';
@@ -9,7 +9,6 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
-// 2. Mock the DAO module
 jest.mock('../daos/user.js');
 
 describe('User Controller & Routes - Comprehensive Coverage Suite', () => {
@@ -19,11 +18,9 @@ describe('User Controller & Routes - Comprehensive Coverage Suite', () => {
   const mockUserId = new mongoose.Types.ObjectId().toString();
 
   beforeAll(() => {
-    // Create tokens for different roles
     adminToken = jwt.sign({ id: mockAdminId, role: 'admin', email: 'admin@jet.com' }, process.env.JWT_SECRET);
     regularToken = jwt.sign({ id: mockUserId, role: 'regular', email: 'user@jet.com' }, process.env.JWT_SECRET);
 
-    // Mock internal middleware lookups for auth protection
     UserDAO.findById.mockImplementation(async (id) => {
       if (id === mockAdminId) return { _id: mockAdminId, role: 'admin', email: 'admin@jet.com' };
       if (id === mockUserId) return { _id: mockUserId, role: 'regular', email: 'user@jet.com' };
@@ -40,7 +37,6 @@ describe('User Controller & Routes - Comprehensive Coverage Suite', () => {
     await mongoose.connection.close();
   });
 
-  // --- REGISTRATION & AUTH ---
   describe('POST /user (Register)', () => {
     it('should register a new user successfully', async () => {
       UserDAO.findByEmail.mockResolvedValue(null);
@@ -70,7 +66,6 @@ describe('User Controller & Routes - Comprehensive Coverage Suite', () => {
     });
   });
 
-  // --- MIDDLEWARE & GAPS ---
   describe('Middleware & Access Control (Lines 23, 33)', () => {
     it('should return 401 if token is malformed', async () => {
       const res = await request(app)
@@ -92,7 +87,6 @@ describe('User Controller & Routes - Comprehensive Coverage Suite', () => {
     });
   });
 
-  // --- PASSWORD CHANGE ---
   describe('PATCH /user/change-password', () => {
     it('should return 404 if user not found for password change (Line 104)', async () => {
       UserDAO.findByEmail.mockResolvedValue(null);
@@ -125,7 +119,6 @@ describe('User Controller & Routes - Comprehensive Coverage Suite', () => {
     });
   });
 
-  // --- ADMIN MANAGEMENT (404 & 500 branches) ---
   describe('Admin Operations - Branch Coverage', () => {
     it('GET /user - should return 500 if findAll fails (Line 44)', async () => {
       UserDAO.findAllUsers.mockRejectedValue(new Error('Fail'));

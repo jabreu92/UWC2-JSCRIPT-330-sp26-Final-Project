@@ -8,7 +8,6 @@ describe('User DAO', () => {
         jest.clearAllMocks();
     });
 
-    // Matches: User.find().select('-password').lean()
     it('should find all users', async () => {
         User.find.mockReturnValue({
             select: jest.fn().mockReturnValue({
@@ -21,7 +20,6 @@ describe('User DAO', () => {
         expect(res[0].email).toBe('user1@test.com');
     });
 
-    // Matches: User.findOne({ email: ... }) -> No chain mentioned in your error!
     it('should find a user by email', async () => {
         User.findOne.mockResolvedValue({ email: 'test@test.com' });
 
@@ -30,7 +28,6 @@ describe('User DAO', () => {
     });
 
     it('should find a user by id', async () => {
-        // Match the DAO: it uses findOne, and has NO .select() or .lean()
         User.findOne.mockResolvedValue({ _id: '123' });
 
         const res = await UserDAO.findById('123');
@@ -45,7 +42,6 @@ describe('User DAO', () => {
         expect(res.email).toBe('new@test.com');
     });
 
-    // Matches: User.findOneAndUpdate(...).select('-password')
     it('should update a user', async () => {
         User.findOneAndUpdate.mockReturnValue({
             select: jest.fn().mockResolvedValue({ email: 'updated@test.com' })
@@ -61,7 +57,6 @@ describe('User DAO', () => {
         expect(res.email).toBe('deleted@test.com');
     });
 
-    // Matches: User.findOneAndUpdate(...).select('-password')
     it('should update password by email', async () => {
         User.findOneAndUpdate.mockReturnValue({
             select: jest.fn().mockResolvedValue({ email: 'test@test.com' })

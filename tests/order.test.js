@@ -1,4 +1,3 @@
-// 1. Set the secret BEFORE any imports
 process.env.JWT_SECRET = 'your_super_secret_key';
 
 import request from 'supertest';
@@ -10,7 +9,6 @@ import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
-// 2. Mock the DAOs
 jest.mock('../daos/order.js');
 jest.mock('../daos/jet.js');
 jest.mock('../daos/user.js');
@@ -24,12 +22,10 @@ describe('Order Controller & Routes', () => {
     const mockOtherUserId = new mongoose.Types.ObjectId().toString();
 
     beforeAll(() => {
-        // Updated payload to include both id and _id for middleware compatibility
         adminToken = jwt.sign({ id: mockAdminId, _id: mockAdminId, role: 'admin' }, process.env.JWT_SECRET);
         regularToken = jwt.sign({ id: mockUserId, _id: mockUserId, role: 'regular' }, process.env.JWT_SECRET);
         otherUserToken = jwt.sign({ id: mockOtherUserId, _id: mockOtherUserId, role: 'regular' }, process.env.JWT_SECRET);
 
-        // 3. Mock Middleware User Lookups
         UserDAO.findById.mockImplementation(async (id) => {
             if (id === mockAdminId) return { _id: mockAdminId, id: mockAdminId, role: 'admin' };
             if (id === mockUserId) return { _id: mockUserId, id: mockUserId, role: 'regular' };
@@ -55,7 +51,6 @@ describe('Order Controller & Routes', () => {
         await mongoose.connection.close();
     });
 
-    // --- CREATE PURCHASE ---
     describe('POST /order', () => {
         it('should create an order for a logged-in user', async () => {
             const orderData = { sku: 'G650' };
@@ -81,7 +76,6 @@ describe('Order Controller & Routes', () => {
         });
     });
 
-    // --- GET ORDERS (Role-Based Logic) ---
     describe('GET /order', () => {
         it('should allow Admin to see all orders', async () => {
             const mockSpy = jest.spyOn(OrderDAO, 'findAllOrdersAdmin')
@@ -105,7 +99,6 @@ describe('Order Controller & Routes', () => {
                 .set('Authorization', `Bearer ${regularToken}`);
 
             expect(res.statusCode).toEqual(200);
-            // Matching against mockUserId string
             expect(mockSpy).toHaveBeenCalledWith(mockUserId);
         });
 
@@ -118,12 +111,11 @@ describe('Order Controller & Routes', () => {
         });
     });
 
-    // --- GET SINGLE ORDER ---
     describe('GET /order/:orderNumber', () => {
         it('should allow a user to view their own order', async () => {
             const mockOrder = {
                 orderNumber: 'ORD-123',
-                user: { _id: mockUserId } // Matches req.user.id check in controller
+                user: { _id: mockUserId }
             };
 
             jest.spyOn(OrderDAO, 'findOrderByNumber').mockResolvedValue(mockOrder);
@@ -139,14 +131,14 @@ describe('Order Controller & Routes', () => {
         it('should return 403 if user attempts to view another user\'s order', async () => {
             const mockOrder = {
                 orderNumber: 'ORD-999',
-                user: { _id: mockAdminId } // Order belongs to admin
+                user: { _id: mockAdminId }
             };
 
             jest.spyOn(OrderDAO, 'findOrderByNumber').mockResolvedValue(mockOrder);
 
             const res = await request(app)
                 .get('/order/ORD-999')
-                .set('Authorization', `Bearer ${regularToken}`); // Regular user requesting
+                .set('Authorization', `Bearer ${regularToken}`);
 
             expect(res.statusCode).toEqual(403);
         });
@@ -160,7 +152,6 @@ describe('Order Controller & Routes', () => {
         });
     });
 
-    // --- ADMIN: UPDATE STATUS ---
     describe('PATCH /order/:orderNumber', () => {
         it('should allow admin to update order status', async () => {
             const updatePayload = { status: 'completed' };
@@ -178,7 +169,6 @@ describe('Order Controller & Routes', () => {
         });
     });
 
-    // --- ADMIN: DELETE ORDER ---
     describe('DELETE /order/:orderNumber', () => {
         it('should allow admin to delete an order record', async () => {
             const mockSpy = jest.spyOn(OrderDAO, 'deleteOrderByNum')
@@ -208,7 +198,7 @@ describe('Order Controller & Routes', () => {
             const res = await request(app)
                 .get('/order/645645645')
                 .set('Authorization', `Bearer ${adminToken}`);
-            expect(res.statusCode).toEqual(404); // Covers line 22
+            expect(res.statusCode).toEqual(404); 
         });
 
         it('should return 500 if order creation crashes', async () => {
@@ -217,7 +207,7 @@ describe('Order Controller & Routes', () => {
                 .post('/order')
                 .set('Authorization', `Bearer ${regularToken}`)
                 .send({ jetSku: 'G650' });
-            expect(res.statusCode).toEqual(400); // Covers line 58/catch block
+            expect(res.statusCode).toEqual(400); 
         });
     });
 });

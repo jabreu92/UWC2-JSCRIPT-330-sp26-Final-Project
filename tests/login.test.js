@@ -1,9 +1,8 @@
 import request from 'supertest';
 import app from '../server.js';
 import * as UserDAO from '../daos/user.js';
-const bcrypt = require('bcrypt'); // Use require to match your controller
+const bcrypt = require('bcrypt');
 
-// 1. Mock the dependencies
 jest.mock('../daos/user.js');
 jest.mock('bcrypt');
 
@@ -11,7 +10,7 @@ describe('Login Controller', () => {
     const mockUser = {
         _id: 'user123',
         email: 'test@example.com',
-        password: '$2b$10$hashedpassword', // A fake hash
+        password: '$2b$10$hashedpassword',
         role: 'regular'
     };
 
@@ -20,10 +19,7 @@ describe('Login Controller', () => {
     });
 
     it('should login successfully with correct credentials', async () => {
-        // Mocking the DAO to return our user
         UserDAO.findByEmail.mockResolvedValue(mockUser);
-        
-        // Mocking bcrypt to return true (password match)
         bcrypt.compare.mockResolvedValue(true);
 
         const res = await request(app)
@@ -40,7 +36,6 @@ describe('Login Controller', () => {
     });
 
     it('should return 401 for an email that does not exist', async () => {
-        // Mocking the DAO to return null
         UserDAO.findByEmail.mockResolvedValue(null);
 
         const res = await request(app)
@@ -56,8 +51,6 @@ describe('Login Controller', () => {
 
     it('should return 401 for an incorrect password', async () => {
         UserDAO.findByEmail.mockResolvedValue(mockUser);
-        
-        // Mocking bcrypt to return false (wrong password)
         bcrypt.compare.mockResolvedValue(false);
 
         const res = await request(app)

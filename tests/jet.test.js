@@ -10,7 +10,6 @@ import Jet from '../models/jet.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
-// 1. Explicitly mock all DAOs at the top level
 jest.mock('../daos/jet.js');
 jest.mock('../daos/user.js');
 jest.mock('../daos/manufacturer.js');
@@ -24,11 +23,6 @@ describe('Jet Controller & Routes - Final Suite', () => {
   beforeAll(() => {
     adminToken = jwt.sign({ id: mockAdminId, role: 'admin' }, process.env.JWT_SECRET);
     userToken = jwt.sign({ id: mockUserId, role: 'user' }, process.env.JWT_SECRET);
-
-    /** 
-     * GLOBAL MOCK: Jet.find().sort().explain()
-     * Targets logIndexReport logic to prevent "undefined" errors
-     */
     jest.spyOn(Jet, 'find').mockImplementation(() => ({
       sort: jest.fn().mockReturnThis(),
       explain: jest.fn().mockResolvedValue({

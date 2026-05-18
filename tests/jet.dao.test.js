@@ -1,7 +1,6 @@
 import * as JetDAO from '../daos/jet.js';
 import Jet from '../models/jet.js';
 
-// Mock the Jet model
 jest.mock('../models/jet.js');
 
 describe('Jet DAO Logic Tests', () => {
@@ -36,32 +35,29 @@ describe('Jet DAO Logic Tests', () => {
 
     describe('findJetBySku', () => {
         it('should find a jet by SKU (case-insensitive) with populate and lean', async () => {
-            // DAO Chain: findOne().populate().lean()
             Jet.findOne.mockReturnValue({
                 populate: jest.fn().mockReturnThis(),
                 lean: jest.fn().mockResolvedValue(mockJet)
             });
 
-            const result = await JetDAO.findJetBySku('g650-er'); // lowercase input
+            const result = await JetDAO.findJetBySku('g650-er');
 
-            expect(Jet.findOne).toHaveBeenCalledWith({ sku: 'G650-ER' }); // Verify uppercase
+            expect(Jet.findOne).toHaveBeenCalledWith({ sku: 'G650-ER' });
             expect(result.sku).toBe('G650-ER');
         });
     });
 
     describe('getAllJets', () => {
         it('should return all jets with manufacturer names sorted by creation date', async () => {
-            // Updated Chain: find().populate().sort().lean()
             Jet.find.mockReturnValue({
                 populate: jest.fn().mockReturnThis(),
-                sort: jest.fn().mockReturnThis(), // Added sort to the mock chain
+                sort: jest.fn().mockReturnThis(), 
                 lean: jest.fn().mockResolvedValue([mockJet])
             });
 
             const result = await JetDAO.getAllJets();
 
             expect(Jet.find).toHaveBeenCalled();
-            // Verify that sort was called with the correct index field
             const jetFindCall = Jet.find();
             expect(jetFindCall.sort).toHaveBeenCalledWith({ createdAt: -1 });
             expect(result).toHaveLength(1);
@@ -80,15 +76,13 @@ describe('Jet DAO Logic Tests', () => {
 
             expect(Jet.find).toHaveBeenCalledWith({ isAvailable: true });
             const jetFindCall = Jet.find({ isAvailable: true });
-            expect(jetFindCall.sort).toHaveBeenCalledWith({ price: 1 }); // Verify price sort
+            expect(jetFindCall.sort).toHaveBeenCalledWith({ price: 1 });
         });
     });
 
     describe('updateOneJetBySku', () => {
         it('should update a jet and populate the manufacturer', async () => {
             const updateData = { isAvailable: false };
-
-            // DAO Chain: findOneAndUpdate().populate()
             Jet.findOneAndUpdate.mockReturnValue({
                 populate: jest.fn().mockResolvedValue({ ...mockJet, ...updateData })
             });

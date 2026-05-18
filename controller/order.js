@@ -3,14 +3,13 @@ import mongoose from 'mongoose';
 
 export const createPurchase = async (req, res) => {
   try {
-    const { sku } = req.body; // Changed from jetId to sku
+    const { sku } = req.body;
     const userId = req.user.id;
 
     if (!sku) {
       return res.status(400).json({ message: "SKU is required to make a purchase." });
     }
 
-    // Call the DAO with the SKU string
     const order = await OrderDAO.createOneOrder(userId, sku);
 
     res.status(201).json({
@@ -18,7 +17,6 @@ export const createPurchase = async (req, res) => {
       data: order
     });
   } catch (error) {
-    // Catching the "No jet found" or "Already sold" errors from the DAO
     res.status(400).json({ message: error.message });
   }
 };

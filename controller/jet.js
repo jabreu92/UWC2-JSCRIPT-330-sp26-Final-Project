@@ -3,43 +3,6 @@ import { findByCode } from '../daos/manufacturer.js';
 import mongoose from 'mongoose';
 import Jet from '../models/jet.js';
 
-// Helper function to keep the controller clean
-const logIndexReport = async (query, sortOptions = {}) => {
-  try {
-    // Mimic DB request and return a JSON report detailing the search strategy used.
-    // Details include, how many documents it looked at, and how long it took
-    const explanation = await Jet.find(query)
-      .sort(sortOptions)
-      .explain('executionStats');
-
-    const stats = explanation.executionStats; // Contains the raw numbers (Total time, documents scanned, documents returned).
-    const winningPlan = explanation.queryPlanner.winningPlan; // The winningPlan is the fastest method MongoDB chose to get the job done.
-    
-    /**
-     * Top-level stage  FETCH means that it found the index and gets the full document, 
-     * Strategy is hidden one level deeper in the inputStage. 
-     * This extracts the actual search method (like IXSCAN or COLLSCAN)
-     */
-    const stage = winningPlan.stage === 'FETCH' || winningPlan.stage === 'SHARD_MERGE' 
-      ? winningPlan.inputStage.stage 
-      : winningPlan.stage;
-
-    console.log("\n🚀 --- MONGODB INDEX REPORT ---");
-    console.log(`Query Path: ${stage}`); // Determines the strategy it useds for search (Index Scan vs. Collection Scan).
-    console.log(`Docs Examined: ${stats.totalDocsExamined}`);// How many items the database had to open.
-    console.log(`Docs Returned: ${stats.nReturned}`); // How many items actually matched your search.
-
-    if (stage === 'IXSCAN') { // IXSCAN (Index Scan): The database used (Index) to find the data. Very fast
-      console.log("✅ RESULT: Gold Medal! Index is being used.");
-    } else if (stage === 'COLLSCAN') { // The database had to read every single document in the collection. This is slow and uses a lot of CPU/Memory
-      console.log("⚠️ RESULT: Performance Warning. Collection Scan detected.");
-    }
-    console.log("-------------------------------\n");
-  } catch (err) {
-    console.error("Could not generate index report:", err.message);
-  }
-};
-
 export const createJet = async (req, res) => {
   try {
     const { sku, name, year, price, manufacturerCode, range, capacity } = req.body;
@@ -58,7 +21,7 @@ export const createJet = async (req, res) => {
 
     const newJet = await JetDAO.createOneJet({
       sku, name, year, price, range, capacity,
-      manufacturer: manufacturerDoc._id 
+      manufacturer: manufacturerDoc._id
     });
 
     res.status(201).json({ message: "Jet created successfully", data: newJet });
@@ -112,16 +75,13 @@ export const updateJet = async (req, res) => {
     const { sku } = req.params;
     const { price } = req.body;
 
-    // 1. Check validation FIRST (before DB lookup)
     if (price !== undefined && price <= 0) {
-      return res.status(400).json({ 
-        message: "Price must be a positive number." 
+      return res.status(400).json({
+        message: "Price must be a positive number."
       });
     }
 
     const updated = await JetDAO.updateOneJetBySku(sku, req.body);
-    
-    // 2. Then check if it exists
     if (!updated) return res.status(404).json({ message: `Jet ${sku} not found.` });
 
     res.status(200).json({ message: "Jet updated successfully", data: updated });
@@ -134,10 +94,9 @@ export const deleteJet = async (req, res) => {
   try {
     const { sku } = req.params;
     const deleted = await JetDAO.deleteOneJetBySku(sku);
-    
+
     if (!deleted) return res.status(404).json({ message: `Jet ${sku} not found.` });
 
-    // Ensure this string matches your test expectation exactly
     res.status(200).json({ message: `Jet ${sku} deleted successfully.` });
   } catch (error) {
     res.status(500).json({ message: "Delete failed", error: error.message });
@@ -148,11 +107,46 @@ export const searchJets = async (req, res) => {
   try {
     const { q } = req.query;
     if (!q) return res.status(400).json({ message: "Search query required" });
-    
-    // This calls the DAO method you created earlier
+
     const results = await JetDAO.searchJets(q);
     res.status(200).json({ data: results });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+const logIndexReport = async (query, sortOptions = {}) => {
+  try {
+    // Mimic DB request and return a JSON report detailing the search strategy used.
+    // Details include, how many documents it looked at, and how long it took
+    const explanation = await Jet.find(query)
+      .sort(sortOptions)
+      .explain('executionStats');
+
+    const stats = explanation.executionStats; // Contains the raw numbers (Total time, documents scanned, documents returned).
+    const winningPlan = explanation.queryPlanner.winningPlan; // The winningPlan is the fastest method MongoDB chose to get the job done.
+
+    /**
+     * Top-level stage  FETCH means that it found the index and gets the full document, 
+     * Strategy is hidden one level deeper in the inputStage. 
+     * This extracts the actual search method (like IXSCAN or COLLSCAN)
+     */
+    const stage = winningPlan.stage === 'FETCH' || winningPlan.stage === 'SHARD_MERGE'
+      ? winningPlan.inputStage.stage
+      : winningPlan.stage;
+
+    console.log("\n🚀 --- MONGODB INDEX REPORT ---");
+    console.log(`Query Path: ${stage}`); // Determines the strategy it useds for search (Index Scan vs. Collection Scan).
+    console.log(`Docs Examined: ${stats.totalDocsExamined}`);// How many items the database had to open.
+    console.log(`Docs Returned: ${stats.nReturned}`); // How many items actually matched your search.
+
+    if (stage === 'IXSCAN') { // IXSCAN (Index Scan): The database used (Index) to find the data. Very fast
+      console.log("✅ RESULT: Gold Medal! Index is being used.");
+    } else if (stage === 'COLLSCAN') { // The database had to read every single document in the collection. This is slow and uses a lot of CPU/Memory
+      console.log("⚠️ RESULT: Performance Warning. Collection Scan detected.");
+    }
+    console.log("-------------------------------\n");
+  } catch (err) {
+    console.error("Could not generate index report:", err.message);
   }
 };

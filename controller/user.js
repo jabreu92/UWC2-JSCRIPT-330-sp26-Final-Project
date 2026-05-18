@@ -22,7 +22,6 @@ export const registerUser = async (req, res) => {
       role: role || 'regular'
     });
 
-    // BRANCH COVERAGE: Ensure the user was actually created
     if (!newUser) {
       return res.status(400).json({ message: "User creation failed" });
     }
@@ -103,7 +102,6 @@ export const changeOwnPassword = async (req, res) => {
     if (success) {
       res.status(200).json({ message: "Password updated successfully" });
     } else {
-      // This hits the missing branch logic in your tests
       res.status(400).json({ message: "Password update failed" });
     }
   } catch (error) {
