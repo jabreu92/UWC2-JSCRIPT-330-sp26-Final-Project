@@ -14,6 +14,7 @@ const openApiSpec = {
   ],
   tags: [
     { name: 'Jets', description: 'Jet inventory operations' },
+    { name: 'Manufacturers', description: 'Manufacturer record operations' },
   ],
   paths: {
     '/jet': {
@@ -159,6 +160,76 @@ const openApiSpec = {
         },
       },
     },
+    '/manufacturer': {
+      get: {
+        tags: ['Manufacturers'],
+        summary: 'List all manufacturers',
+        description:
+          'Access level: Public (no authentication required). ' +
+          'Returns a list of all manufacturer records in the catalog. ' +
+          'No request body or Authorization header is needed.',
+        responses: {
+          200: {
+            description: 'Manufacturers returned successfully.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    count: {
+                      type: 'integer',
+                      description: 'Total number of manufacturers returned.',
+                      example: 3,
+                    },
+                    data: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/Manufacturer' },
+                    },
+                  },
+                },
+                example: {
+                  count: 3,
+                  data: [
+                    {
+                      _id: '664a1f2e8b3c2a001f4e0001',
+                      code: 'GUL',
+                      name: 'Gulfstream',
+                      country: 'USA',
+                      foundedYear: 1958,
+                    },
+                    {
+                      _id: '664a1f2e8b3c2a001f4e0002',
+                      code: 'BOM',
+                      name: 'Bombardier',
+                      country: 'Canada',
+                      foundedYear: 1942,
+                    },
+                    {
+                      _id: '664a1f2e8b3c2a001f4e0003',
+                      code: 'EMB',
+                      name: 'Embraer',
+                      country: 'Brazil',
+                      foundedYear: 1969,
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          500: {
+            description: 'Internal server error.',
+            content: {
+              'application/json': {
+                example: {
+                  message: 'Error retrieving manufacturers',
+                  error: 'Unexpected database error',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {
@@ -169,6 +240,36 @@ const openApiSpec = {
       },
     },
     schemas: {
+      Manufacturer: {
+        type: 'object',
+        properties: {
+          _id: {
+            type: 'string',
+            description: 'MongoDB ObjectId.',
+            example: '664a1f2e8b3c2a001f4e0001',
+          },
+          code: {
+            type: 'string',
+            description: 'Unique uppercase short code identifying the manufacturer.',
+            example: 'GUL',
+          },
+          name: {
+            type: 'string',
+            description: 'Full manufacturer name.',
+            example: 'Gulfstream',
+          },
+          country: {
+            type: 'string',
+            description: 'Country where the manufacturer is headquartered.',
+            example: 'USA',
+          },
+          foundedYear: {
+            type: 'integer',
+            description: 'Year the manufacturer was founded.',
+            example: 1958,
+          },
+        },
+      },
       Jet: {
         type: 'object',
         properties: {
