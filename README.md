@@ -84,3 +84,16 @@ Repository for JS330 Course Final Project
     - Week 3: Implement Authentication with JWT Token and Bycript password and Use middleware for authorization.
     - Week 4: Write Unit Test coverage of 80% for the routes & Perfrom an End to End testing.
     - Week 5: Present the Project to the class with an End to End example.  
+
+# Proof of Concept 
+
+- 1. Project update in README explains what has been finished and what still needs to be done
+  - As of now, The Private Jet Business API Project is at 80% complete. Below is a lits of the things completed
+    - a. Models, DAOS, Controllers, Routes and Middleware code implementation.
+    - b. Unit Tests for the routes, DAOS & edge cases.
+    - c. Documentation of the project.
+    - d. Express Server & MongoDB connection is Established.
+- 2. What is remaining of the project ?
+  - The Postman collection of all the CRUDS & End to End testing has to be created.
+  - Create an End to End Test for the business case of a Jet Purchase.
+  - Present to the class the Private Jet Business API with a Postman Collection
