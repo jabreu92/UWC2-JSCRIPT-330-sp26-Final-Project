@@ -18,7 +18,7 @@ mongoose.connect('mongodb://localhost/jscript-330-final-project', {})
 
     server.listen(port, () => {
       // eslint-disable-next-line no-console
-      console.log(`Server is listening on http://localhost:${port}`);
+      console.log(`Server is listening on http://localhost:${port}/api-docs/`);
     });
   })
   .catch((err) => {
