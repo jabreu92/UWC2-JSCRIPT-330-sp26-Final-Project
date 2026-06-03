@@ -1,0 +1,121 @@
+import * as UserDAO from '../daos/user.js';
+const bcrypt = require('bcrypt');
+
+export const registerUser = async (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+
+    // 1. Check if user exists
+    const userExists = await UserDAO.findByEmail(email);
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // 2. Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // 3. Create user
+    const newUser = await UserDAO.createOneUser({
+      email,
+      password: hashedPassword,
+      role: role || 'regular'
+    });
+
+    if (!newUser) {
+      return res.status(400).json({ message: "User creation failed" });
+    }
+
+    // 4. Return user
+    res.status(201).json({
+      _id: newUser._id,
+      email: newUser.email,
+      role: newUser.role
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getUsers = async (req, res) => {
+  try {
+    const users = await UserDAO.findAllUsers();
+    res.status(200).json({ count: users.length, data: users });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getUserByEmail = async (req, res) => {
+  try {
+    const user = await UserDAO.findByEmail(req.params.email);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const { password, ...userData } = user.toObject();
+    res.status(200).json({ data: userData });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const updateData = { ...req.body };
+
+    if (updateData.password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(updateData.password, salt);
+    }
+
+    const updated = await UserDAO.updateOneUser(email, updateData);
+    if (!updated) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({ message: "User updated", data: updated });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const changeOwnPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const email = req.user.email;
+
+    // 1. Find user
+    const user = await UserDAO.findByEmail(email);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // 2. Verify old password
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Current password incorrect" });
+    }
+
+    // 3. Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // 4. Update - Capture success to cover the 'else' branch
+    const success = await UserDAO.updatePasswordByEmail(email, hashedPassword);
+
+    if (success) {
+      res.status(200).json({ message: "Password updated successfully" });
+    } else {
+      res.status(400).json({ message: "Password update failed" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const deleted = await UserDAO.deleteOneUser(req.params.email);
+    if (!deleted) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
